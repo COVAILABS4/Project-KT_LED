@@ -1,0 +1,92 @@
+[
+  {
+    "Group_id": "GP1",
+    "racks": [
+      {
+        "rack_id": "rc19",
+        "mac": [44, 188, 187, 5, 52, 208],
+        "bins": [
+          {
+            "color": [150, 150, 0],
+            "led_pin": 12,
+            "bin_id": "rc19_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": [0, 0, 150],
+            "led_pin": 25,
+            "bin_id": "rc19_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": [150, 0, 0],
+            "led_pin": 26,
+            "bin_id": "rc19_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": [0, 128, 0],
+            "led_pin": 27,
+            "bin_id": "rc19_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": false,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "rc2",
+        "master": [44, 188, 187, 5, 52, 208],
+        "mac": [44, 188, 187, 5, 60, 196],
+        "bins": [
+          {
+            "color": [128, 0, 128],
+            "led_pin": 12,
+            "bin_id": "rc2_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": [150, 0, 0],
+            "led_pin": 25,
+            "bin_id": "rc2_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": [128, 0, 128],
+            "led_pin": 26,
+            "bin_id": "rc2_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": [0, 128, 0],
+            "led_pin": 27,
+            "bin_id": "rc2_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": false,
+            "clicked": false
+          }
+        ]
+      }
+    ]
+  }
+]

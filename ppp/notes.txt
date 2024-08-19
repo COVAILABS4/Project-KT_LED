@@ -1,0 +1,51 @@
+Error handling POST request: memory allocation failed, allocating 512 byte
+Client connected from ('192.168.231.69', 50465)
+POST Data: b'{"group_id":"C","rack_id":"C2","bin_id":"C2_02","new_schedule_time":"12:44","operation":"push","color":[2,3,11]}'
+No backup found or error loading backup: memory allocation failed, allocating 85 bytes
+b',\xbc\xbb\x05\x17$'
+COMMING
+{'rack_id': 'C2', 'new_schedule_time': '12:44', 'bin_id': 'C2_02', 'operation': 'push', 'group_id': 'C', 'color': [2, 3, 11]}
+push
+Local JSON updated successfully
+Error handling POST request: 
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+Guru Meditation Error: Core  1 panic'ed (Interrupt wdt timeout on CPU1). 
+
+Core  1 register dump:
+PC      : 0x4009a876  PS      : 0x00060035  A0      : 0x8009820f  A1      : 0x3ffdfbc0  
+A2      : 0x3ffe43b0  A3      : 0xffffffff  A4      : 0x0000abab  A5      : 0xb33fffff  
+A6      : 0xce0b7e78  A7      : 0x00060023  A8      : 0x8009a880  A9      : 0x3ffdfba0  
+A10     : 0x00000000  A11     : 0xb33fffff  A12     : 0x00000000  A13     : 0x3f409314  
+A14     : 0x0000003c  A15     : 0x00000001  SAR     : 0x00000020  EXCCAUSE: 0x00000006  
+EXCVADDR: 0x00000000  LBEG    : 0x4000c2e0  LEND    : 0x4000c2f6  LCOUNT  : 0xffffffff  
+
+
+Backtrace: 0x4009a873:0x3ffdfbc0 0x4009820c:0x3ffdfbf0 0x4016f8c2:0x3ffdfc30 0x40171103:0x3ffdfc50 0x4015ed45:0x3ffdfc70
+
+
+Core  0 register dump:
+PC      : 0x4009576a  PS      : 0x00060335  A0      : 0x80154c71  A1      : 0x3ffbc210  
+A2      : 0x00000003  A3      : 0x00060323  A4      : 0x00060320  A5      : 0x3ffb6e90  
+A6      : 0x00000003  A7      : 0x00060023  A8      : 0x8009000e  A9      : 0x3ffbc1f0  
+A10     : 0x3ffc2fa4  A11     : 0x00000002  A12     : 0x3ffbe6b4  A13     : 0x00000008  
+A14     : 0x00000001  A15     : 0x00060323  SAR     : 0x0000001d  EXCCAUSE: 0x00000006  
+EXCVADDR: 0x00000000  LBEG    : 0x00000000  LEND    : 0x00000000  LCOUNT  : 0x00000000  
+
+
+Backtrace: 0x40095767:0x3ffbc210 0x40154c6e:0x3ffbc230 0x400d2bc7:0x3ffbc250 0x40098b20:0x3ffbc270
+
+
+
+
+ELF file SHA256: 2d2ed3fbef6a52cf
+
+Rebooting...
+MicroPython v1.21.0 on 2023-10-05; Generic ESP32 module with ESP32
+Type "help()" for more information.
+MicroPython v1.21.0 on 2023-10-05; Generic ESP32 module with ESP32
+
+Type "help()" for more information.
+
+>>> 

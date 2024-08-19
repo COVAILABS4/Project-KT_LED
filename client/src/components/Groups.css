@@ -1,0 +1,47 @@
+.groups-section {
+    border: 1px solid black;
+    margin-top: 60px;
+    height: 100%;
+    overflow-y: auto;
+    width: 100%;
+  }
+  
+  .groups-header {
+    text-align: center;
+  }
+  
+  .group-container {
+    margin-bottom: 20px;
+    overflow-x: auto;
+    white-space: nowrap;
+    border: 1px solid #dee2e6;
+    padding: 10px;
+    /* overflow-y: auto; */
+    width: 100%;
+    text-align: center;
+  }
+  
+  .single-column-table {
+    display: inline-block;
+    vertical-align: top;
+    margin-right: 10px;
+    table-layout: fixed;
+    width: 100px; 
+    
+  }
+  
+  .single-column-table th, .single-column-table td {
+    text-align: center;
+    height: 50px; /* Set a fixed height for each cell */
+    overflow: hidden;
+    white-space: nowrap;
+    border: 1px solid black;
+    padding: 15px;
+    cursor: pointer;
+
+  }
+  
+  .single-column-table thead th {
+    background-color: #f8f9fa;
+  }
+  

@@ -1,0 +1,22 @@
+http://192.168.1.46:8000/
+
+{
+    "group_id": "GRP_001",
+    "rack_id": "WR002",
+    "bin_id": "WR002_04",
+    "new_schedule_time": "15:00",
+    "operation": "push",
+    "color": [255, 1, 34]
+}
+
+
+
+http://192.168.1.46:8000/
+
+{
+    "group_id": "GRP_001",
+    "rack_id": "WR002",
+    "bin_id": "WR002_04",
+    "operation": "color-change",
+    "color": [255, 123, 34]
+}

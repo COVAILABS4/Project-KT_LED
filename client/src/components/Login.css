@@ -1,0 +1,31 @@
+.login-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh; /* Full height of the viewport */
+    background-color: #f8f9fa; /* Light background color for better contrast */
+  }
+  
+  .login-card {
+    padding: 2rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+    background-color: #ffffff; /* White background for the card */
+    width: 100%; /* Ensure it takes the full width of the column */
+    max-width: 400px; /* Set a max-width for better aesthetics */
+  }
+  
+  h2 {
+    font-size: 24px;
+    font-weight: bold;
+  }
+  
+  .form-control {
+    margin-bottom: 20px;
+  }
+  
+  button {
+    font-size: 16px;
+    padding: 10px;
+  }
+  

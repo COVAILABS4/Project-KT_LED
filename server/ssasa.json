@@ -1,0 +1,113 @@
+[
+  {
+    "Group_id": "GRP_001",
+    "racks": [
+      {
+        "rack_id": "WR001",
+        "mac": "SLAVE_001",
+        "bins": [
+          {
+            "color": 1,
+            "bin_id": "WR001_01",
+            "schedules": [
+              { "enabled": false, "time": "05:08" },
+              { "enabled": false, "time": "17:40" },
+              { "enabled": false, "time": "16:48" },
+              { "enabled": false, "time": "11:36" }
+            ],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": 1,
+            "bin_id": "WR001_02",
+            "schedules": [{ "enabled": false, "time": "05:08" }],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": 3,
+            "bin_id": "WR001_03",
+            "schedules": [
+              { "enabled": false, "time": "14:52" },
+              { "enabled": false, "time": "18:16" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" }
+            ],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": 4,
+            "bin_id": "WR001_04",
+            "schedules": [
+              { "enabled": false, "time": "10:30" },
+              { "enabled": false, "time": "18:16" }
+            ],
+            "enabled": false,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "WR002",
+        "mac": "48:e7:29:a1:90:2c",
+        "bins": [
+          {
+            "color": 2,
+            "bin_id": "WR002_01",
+            "schedules": [
+              { "enabled": false, "time": "05:08" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" }
+            ],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": 1,
+            "bin_id": "WR002_02",
+            "schedules": [
+              { "enabled": false, "time": "05:08" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" }
+            ],
+            "enabled": false,
+            "clicked": false
+          },
+          {
+            "color": 3,
+            "mac": "48:e7:29:a1:90:2c",
+            "bin_id": "WR002_03",
+            "schedules": [
+              { "enabled": false, "time": "14:00" },
+              { "enabled": false, "time": "18:16" }
+            ],
+            "enabled": false,
+            "clicked": true
+          },
+          {
+            "color": 4,
+            "mac": "48:e7:29:a1:90:2c",
+            "bin_id": "WR002_04",
+            "schedules": [
+              { "enabled": false, "time": "09:45" },
+              { "enabled": false, "time": "18:21" },
+              { "enabled": false, "time": "18:21" }
+            ],
+            "enabled": false,
+            "clicked": true
+          }
+        ]
+      }
+    ]
+  }
+]

@@ -1,0 +1,109 @@
+import json
+import time
+import machine
+import network
+import urequests  # Import urequests for HTTP operations
+
+# Wi-Fi credentials
+ssid = 'AB7'
+password = '07070707'
+
+# Connect to Wi-Fi
+station = network.WLAN(network.STA_IF)
+station.active(True)
+station.connect(ssid, password)
+
+while not station.isconnected():
+    pass
+
+print('Connection successful')
+print(station.ifconfig())
+
+# Define the GPIO pin for the button (change to the appropriate pin)
+button_pin = machine.Pin(15, machine.Pin.IN, machine.Pin.PULL_UP)
+
+# Define the debounce delay in milliseconds
+debounce_delay = 200  # Adjust as necessary
+
+url = '192.168.231.83:5000'
+# API endpoint URLs
+get_url = 'http://'+url+'/data'  # Replace with your actual endpoint URL
+post_url = 'http://'+url+'/click/update'  # Replace with your actual endpoint URL for updating data
+
+# Function to update the clicked status in JSON file fetched from API
+def update_clicked_status(group_id, wrack_id, bin_id):
+    try:
+        # Fetch the JSON data from the API
+        response = urequests.get(get_url)
+        data = response.json()
+        response.close()
+        
+        
+        # Example: Modify the data structure here if needed
+        # Find and update the relevant entry
+        grp_idx = -1;
+        wr_idx = -1;
+        bin_idx = -1;
+        for group in range(len(data)):
+            if data[group]['Group_id'] == group_id:
+                grp_idx = group;
+                wracks = data[grp_idx]['WRacks']
+                for wrack in range(len(wracks)):
+                     if wracks[wrack]['WRack_id'] == wrack_id:
+                         wr_idx = wrack
+                         bins = wracks[wr_idx]['bins']
+                         print(bins)
+                         
+                         for bin in range(len(bins)):
+                             if bins[bin]["bin_id"] == bin_id:
+                                 bin_idx = bin
+                                 print(bin)
+                                 bins[bin_idx]['clicked'] = True
+                                 print(bin)
+                                 break
+
+        # Send the updated JSON back to the API
+        headers = {'Content-Type': 'application/json'}
+        
+        bin_details  = {
+            'grp_idx' : grp_idx,
+            'wr_idx' : wr_idx,
+            'bin_idx' : bin_idx
+            }
+        response = urequests.post(post_url, data=json.dumps(bin_details), headers=headers)
+        print(response.text)
+        response.close()
+        
+        print("Changed Successfully")
+
+    except OSError as e:
+        print("Error fetching or updating JSON data:", e)
+
+num = 1
+# Define the function to be called on button press
+def clicked(pin):
+    global num
+    # Debounce logic: wait for the debounce delay and check the button state
+    time.sleep_ms(debounce_delay)
+    if pin.value() == 0:  # Check if the button is still pressed
+        print("Button clicked!")
+
+        # Example data to update
+        group_id = 'GRP_001'
+        wrack_id = 'WR014'
+        bin_id = 'WR014_0'+str(num)
+
+        num+=1
+        
+        # Update clicked status
+        update_clicked_status(group_id, wrack_id, bin_id)
+
+# Attach an interrupt to the button pin
+button_pin.irq(trigger=machine.Pin.IRQ_FALLING, handler=clicked)
+
+# Main loop
+while True:
+    # Sleep to reduce CPU usage
+    time.sleep(1)
+
+

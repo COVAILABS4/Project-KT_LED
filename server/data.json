@@ -1,0 +1,151 @@
+[
+  {
+    "Group_id": "GRP -1",
+    "master_device_id": "KT-1",
+    "racks": [
+      {
+        "rack_id": "1",
+        "mac": [
+          44,
+          188,
+          187,
+          5,
+          23,
+          36
+        ],
+        "bins": [
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 12,
+            "bin_id": "1_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 25,
+            "bin_id": "1_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 26,
+            "bin_id": "1_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 27,
+            "bin_id": "1_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "2",
+        "master": [
+          44,
+          188,
+          187,
+          5,
+          23,
+          36
+        ],
+        "mac": [
+          44,
+          188,
+          187,
+          5,
+          52,
+          208
+        ],
+        "bins": [
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 12,
+            "bin_id": "2_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 25,
+            "bin_id": "2_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 26,
+            "bin_id": "2_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 27,
+            "bin_id": "2_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "Group_id": "GRP -2",
+    "master_device_id": "KT-1222",
+    "racks": []
+  }
+]
