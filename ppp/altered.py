@@ -15,7 +15,7 @@ e = None
 data = []
 wlan_mac = None;
 
-server_ip = "192.168.231.69"
+server_ip = "192.168.231.83"
 
 # Define I2C pins for SDA and SCL
 sda_pin = machine.Pin(21)
@@ -161,6 +161,8 @@ def config_all(config):
         bins.append(Bin(bin_config, i, config['rack_id']))
         print(f"Bin {i + 1} Configured")
         #time.sleep(0.5)  # Add delay to ensure hardware is properly configured
+    for i in bins:
+        i.turn_off_leds();
     print("All bins initialized and ready.")
 
 def add_peers_from_json(data):
@@ -177,6 +179,39 @@ def add_peers_from_json(data):
             print(f"Added peer: {mac}")
 
 receive_thread_soc = None
+
+
+
+def handle_post(request, cl):
+    sev_data = None
+    try:
+        headers = {}
+        while True:
+            line = request.readline().decode('utf-8').strip()
+            if not line:
+                break
+            key, value = line.split(': ', 1)
+            headers[key] = value
+
+        content_length = int(headers.get('Content-Length', 0))
+        post_data = request.read(content_length)
+        print('POST Data:', post_data)
+        sev_data = json.loads(post_data)
+        response = {'status': 'success'}
+        cl.send('HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n')
+        cl.send(json.dumps(response))
+        cl.close()
+        
+    except Exception as err:
+        print(f"Error handling POST request: {err}")
+        check_and_reset()
+        response = {'status': 'error', 'message': str(err)}
+        cl.send('HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n')
+        cl.send(json.dumps(response))
+    
+    if sev_data is not None:
+        handle_operation(sev_data)
+
 
 def start_server():
     s = None
@@ -200,10 +235,38 @@ def start_server():
                 cl_file = cl.makefile('rwb', 0)
                 request_line = cl_file.readline().decode('utf-8').strip()
                 method, path, version = request_line.split()
-                if method == 'POST':
-                    handle_post(cl_file, cl)
+
+                sev_data = None
+                try:
+                    headers = {}
+                    while True:
+                        line = cl_file.readline().decode('utf-8').strip()
+                        if not line:
+                            break
+                        key, value = line.split(': ', 1)
+                        headers[key] = value
+
+                    content_length = int(headers.get('Content-Length', 0))
+                    post_data = cl_file.read(content_length)
+                    print('POST Data:', post_data)
+                    sev_data = json.loads(post_data)
+                    response = {'status': 'success'}
+                    cl.send('HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n')
+                    cl.send(json.dumps(response))
+                    
+                except Exception as err:
+                    print(f"Error handling POST request: {err}")
+                    check_and_reset()
+                    response = {'status': 'error', 'message': str(err)}
+                    cl.send('HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n')
+                    cl.send(json.dumps(response))
+                finally:
+                    cl.close();
+                
+                if sev_data is not None:
+                    handle_operation(sev_data)
+                
                 print(cl)
-                break
             except Exception as err:
                 print(f"Error processing request: {err}")
                 check_and_reset()
@@ -619,35 +682,6 @@ def handle_operation(rec_data):
                 else:
                     bins[bin_idx].turn_off_leds()
     
-def handle_post(request, cl):
-    sev_data = None
-    try:
-        headers = {}
-        while True:
-            line = request.readline().decode('utf-8').strip()
-            if not line:
-                break
-            key, value = line.split(': ', 1)
-            headers[key] = value
-
-        content_length = int(headers.get('Content-Length', 0))
-        post_data = request.read(content_length)
-        print('POST Data:', post_data)
-        sev_data = json.loads(post_data)
-        response = {'status': 'success'}
-        cl.send('HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n')
-        cl.send(json.dumps(response))
-        cl.close()
-        
-    except Exception as err:
-        print(f"Error handling POST request: {err}")
-        check_and_reset()
-        response = {'status': 'error', 'message': str(err)}
-        cl.send('HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n')
-        cl.send(json.dumps(response))
-    
-    if sev_data is not None:
-        handle_operation(sev_data)
 
 notification_queue = []
 
@@ -660,9 +694,9 @@ def save_queues_to_backup():
 
 
     print(backup_data)
-    with open('bagging.json', 'w') as f:
+    with open('back.json', 'w') as f:
         json.dump(backup_data, f)   
-    with open('bagging.json', 'r') as f:
+    with open('back.json', 'r') as f:
         backupdata = json.load(f)
         print(backupdata)
     time.sleep(2)
@@ -670,7 +704,7 @@ def save_queues_to_backup():
 def load_queues_from_backup():
     global message_queue, notification_queue
     try:
-        with open('bagging.json', 'r') as f:
+        with open('back.json', 'r') as f:
             backup_data = json.load(f)
             notification_queue = backup_data.get("notify", [])
             message_queue = backup_data.get("mess", [])
@@ -680,7 +714,7 @@ def load_queues_from_backup():
             "mess":[] 
         }
 
-        with open('bagging.json', 'w') as f:
+        with open('back.json', 'w') as f:
             json.dump(new_data, f)  
     except Exception as err:
         print("No backup found or error loading backup:", err)
@@ -1012,9 +1046,11 @@ loaders()
 
 load_queues_from_backup()
 
-_thread.start_new_thread(check_switch_state, ())
+check_switch_state()
 
 
         
+
+
 
 

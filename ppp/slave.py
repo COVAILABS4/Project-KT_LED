@@ -493,8 +493,9 @@ def main():
     bins[0].color = (0,0,0)
     bins[0].change_led_color()
     time.sleep(0.5)
-    
-    
+    for i in bins:
+        i.color = (0,0,0)
+        i.change_led_color()
     hour, minute, second = map(int, global_time.split(":"))
     rtc.datetime((2024, 8, 3, 6, hour, minute, second, 0))
     time.sleep(2)
@@ -518,34 +519,49 @@ def update_time_from_peer():
         else:
             print("No response received, retrying...")
 
+def get_data():
+    data = []
+    with open("slave.json", 'r') as f:
+        data= ujson.load(f)
+    
+    return data;
+
 def schedule_checker():
     print("Called")
-    global bins , rtc
-    schedule = read_schedule()
+    global bins, rtc, config
     while True:
-        schedule = read_schedule()
-        print("Called")
-        current_time = rtc.datetime()
-        print(current_time)
-        current_hour = current_time[4]
-        current_minute = current_time[5]
-        day_schedule = schedule.get(str(current_hour), {})
         
-        for bin_index, bin_schedule in day_schedule.items():
-            print(bin_index,"-", bin_schedule)
-            for entry in bin_schedule:
-                print(entry['scheduleTime'],"{:02}:{:02}".format(current_hour, current_minute))
-                if  entry['enabled'] and entry['scheduleTime'] == "{:02}:{:02}".format(current_hour, current_minute):
-                    
-                    bins[entry['index']].color = tuple(entry['color'])
-                    bins[entry['index']].change_led_color()
-                    bins[entry['index']].clicked = False
-                    #enqueue_color_message(entry['index'],entry['color'])
+        config = get_data();
+        if not config:
+            return 
+
+        current_time = rtc.datetime()
+
+        print(current_time)
+        current_hour = str(current_time[4]) # Ensure hour and minute are two digits
+        current_minute = str(current_time[5])
+
+        current_hour = "0" + current_hour if len(current_hour) == 1   else current_hour;
+        current_minute = "0" + current_minute if len(current_minute) == 1   else current_minute;
+    
+        print(current_hour + " : " + current_minute)
+
+        for index, bin in enumerate(config['bins']):  # Corrected the variable names
+            for schedule in bin['schedules']:
+                hour, minute = tuple(schedule['time'].split(":"))
+                if schedule['enabled'] and hour == current_hour and minute == current_minute:
+                    bins[index].color = tuple(schedule['color'])
+                    bins[index].change_led_color()
+                    bin['clicked'] = False
         time.sleep(60)
+
 
 if __name__ == "__main__":    
     main()
 
 
     
+
+
+
 

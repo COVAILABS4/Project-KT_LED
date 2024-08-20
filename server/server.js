@@ -216,15 +216,19 @@ app.get("/data", (req, res) => {
 });
 
 const updateSchedulesWithDelay = (scheduleDataArray) => {
+  console.log("Fined--2 : " + scheduleDataArray);
+
   scheduleDataArray.forEach((scheduleData, index) => {
     setTimeout(() => {
+      console.log(scheduleData);
+
       let fail = updatePushScheduleESP(
         scheduleData.group_id,
         scheduleData.rack_id,
         scheduleData.bin_id,
         scheduleData.new_schedule_time,
         scheduleData.color,
-        scheduleDataArray.master_device_id
+        scheduleData.master_device_id
       );
 
       if (fail) return true;
@@ -306,6 +310,8 @@ app.post("/import", upload.single("file"), (req, res) => {
   });
 
   fs.unlinkSync(file.path); // Remove the uploaded file
+
+  console.log("Fined");
 
   // Call the function to update schedules with a delay
   let fail = updateSchedulesWithDelay(scheduleDataArray);
@@ -543,9 +549,14 @@ app.post("/new/group", (req, res) => {
   console.log(newGroupid, newGroupDeviceId);
   updateCache(); // Ensure cache is up-to-date
 
-  // Find the index of the existing group (if any)
-  const existingGroupIndex = cache.findIndex(
+  // Find the index of the existing group by Group ID (if any)
+  const existingGroupIndexById = cache.findIndex(
     (group) => group.Group_id === newGroupid
+  );
+
+  // Find the index of the existing group by Device ID (if any)
+  const existingGroupIndexByDeviceId = cache.findIndex(
+    (group) => group.master_device_id === newGroupDeviceId
   );
 
   const newGroup = {
@@ -554,11 +565,14 @@ app.post("/new/group", (req, res) => {
     racks: [], // Initialize with an empty array for racks
   };
 
-  if (existingGroupIndex !== -1) {
-    // If the group exists, replace it
-    cache[existingGroupIndex] = newGroup;
+  if (existingGroupIndexById !== -1) {
+    // If the group exists by Group ID, replace it
+    cache[existingGroupIndexById] = newGroup;
+  } else if (existingGroupIndexByDeviceId !== -1) {
+    // If the group exists by Device ID, replace it
+    cache[existingGroupIndexByDeviceId] = newGroup;
   } else {
-    // If the group doesn't exist, add it
+    // If the group doesn't exist by either ID, add it
     cache.push(newGroup);
   }
 
@@ -569,7 +583,7 @@ app.post("/new/group", (req, res) => {
     return;
   }
 
-  saveDataToFile(cache); // Save the updated cache to the file
+  saveDataToFile(cache);
   res.json({ message: "Group added or updated successfully", group: newGroup });
 });
 
@@ -879,9 +893,18 @@ const updatePushScheduleESP = (
   bin_id,
   new_schedule_time,
   color,
-  device_id
+  master_device_id
 ) => {
-  var ip = readStaticIP(device_id);
+  console.log(
+    "called : " + group_id,
+    rack_id,
+    bin_id,
+    new_schedule_time,
+    color,
+    master_device_id
+  );
+
+  var ip = readStaticIP(master_device_id);
 
   if (ip == "") return true;
   const normalizedColor = [
@@ -889,6 +912,9 @@ const updatePushScheduleESP = (
     normalize(color[1]),
     normalize(color[2]),
   ];
+
+  console.log("saa");
+
   const request = {
     ip: ip,
     data: {

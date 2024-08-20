@@ -2,7 +2,6 @@ import json
 import network
 import espnow
 import time
-import utime
 from ubinascii import hexlify
 import usocket as socket
 import _thread
@@ -16,7 +15,7 @@ e = None
 data = []
 wlan_mac = None;
 
-server_ip = "192.168.231.69"
+server_ip = "192.168.231.83"
 
 # Define I2C pins for SDA and SCL
 sda_pin = machine.Pin(21)
@@ -162,6 +161,8 @@ def config_all(config):
         bins.append(Bin(bin_config, i, config['rack_id']))
         print(f"Bin {i + 1} Configured")
         #time.sleep(0.5)  # Add delay to ensure hardware is properly configured
+    for i in bins:
+        i.turn_off_leds();
     print("All bins initialized and ready.")
 
 def add_peers_from_json(data):
@@ -178,23 +179,46 @@ def add_peers_from_json(data):
             print(f"Added peer: {mac}")
 
 receive_thread_soc = None
-stop_thread_flag_soc = False
 
-soc = None
 
-def close_soc():
-    global soc
-    if soc is not None:
-        soc.close()
-        soc = None
-        print("Socket closed")
+
+def handle_post(request, cl):
+    sev_data = None
+    try:
+        headers = {}
+        while True:
+            line = request.readline().decode('utf-8').strip()
+            if not line:
+                break
+            key, value = line.split(': ', 1)
+            headers[key] = value
+
+        content_length = int(headers.get('Content-Length', 0))
+        post_data = request.read(content_length)
+        print('POST Data:', post_data)
+        sev_data = json.loads(post_data)
+        response = {'status': 'success'}
+        cl.send('HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n')
+        cl.send(json.dumps(response))
+        cl.close()
+        
+    except Exception as err:
+        print(f"Error handling POST request: {err}")
+        check_and_reset()
+        response = {'status': 'error', 'message': str(err)}
+        cl.send('HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n')
+        cl.send(json.dumps(response))
+    
+    if sev_data is not None:
+        handle_operation(sev_data)
+
+
 def start_server():
-    global soc, stop_thread_flag_soc
     s = None
     try:
         addr = socket.getaddrinfo('0.0.0.0', 8000)[0][-1]
         s = socket.socket()
-        soc = s
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     except Exception as err:
         check_and_reset()
     try:
@@ -204,23 +228,53 @@ def start_server():
             pass
         s.listen(1)
         print('Listening on', addr)
-        while not stop_thread_flag_soc:
+        while True:
             try:
                 cl, addr = s.accept()
                 print('Client connected from', addr)
                 cl_file = cl.makefile('rwb', 0)
                 request_line = cl_file.readline().decode('utf-8').strip()
                 method, path, version = request_line.split()
-                if method == 'POST':
-                    handle_post(cl_file, cl)
-                cl.close()
+
+                sev_data = None
+                try:
+                    headers = {}
+                    while True:
+                        line = cl_file.readline().decode('utf-8').strip()
+                        if not line:
+                            break
+                        key, value = line.split(': ', 1)
+                        headers[key] = value
+
+                    content_length = int(headers.get('Content-Length', 0))
+                    post_data = cl_file.read(content_length)
+                    print('POST Data:', post_data)
+                    sev_data = json.loads(post_data)
+                    response = {'status': 'success'}
+                    cl.send('HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n')
+                    cl.send(json.dumps(response))
+                    
+                except Exception as err:
+                    print(f"Error handling POST request: {err}")
+                    check_and_reset()
+                    response = {'status': 'error', 'message': str(err)}
+                    cl.send('HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n')
+                    cl.send(json.dumps(response))
+                finally:
+                    cl.close();
+                
+                if sev_data is not None:
+                    handle_operation(sev_data)
+                
+                print(cl)
             except Exception as err:
                 print(f"Error processing request: {err}")
                 check_and_reset()
     except Exception as err:
         print("Error binding socket:", err)
     finally:
-        close_soc()
+        if s is not None:
+            s.close()
 
 def receive_message(e):
     global rtc
@@ -628,34 +682,6 @@ def handle_operation(rec_data):
                 else:
                     bins[bin_idx].turn_off_leds()
     
-def handle_post(request, cl):
-    sev_data = None
-    try:
-        headers = {}
-        while True:
-            line = request.readline().decode('utf-8').strip()
-            if not line:
-                break
-            key, value = line.split(': ', 1)
-            headers[key] = value
-
-        content_length = int(headers.get('Content-Length', 0))
-        post_data = request.read(content_length)
-        print('POST Data:', post_data)
-        sev_data = json.loads(post_data)
-        response = {'status': 'success'}
-        cl.send('HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n')
-        cl.send(json.dumps(response))
-        
-    except Exception as err:
-        print(f"Error handling POST request: {err}")
-        check_and_reset()
-        response = {'status': 'error', 'message': str(err)}
-        cl.send('HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n')
-        cl.send(json.dumps(response))
-    
-    if sev_data is not None:
-        handle_operation(sev_data)
 
 notification_queue = []
 
@@ -668,9 +694,9 @@ def save_queues_to_backup():
 
 
     print(backup_data)
-    with open('bagging.json', 'w') as f:
+    with open('back.json', 'w') as f:
         json.dump(backup_data, f)   
-    with open('bagging.json', 'r') as f:
+    with open('back.json', 'r') as f:
         backupdata = json.load(f)
         print(backupdata)
     time.sleep(2)
@@ -678,7 +704,7 @@ def save_queues_to_backup():
 def load_queues_from_backup():
     global message_queue, notification_queue
     try:
-        with open('bagging.json', 'r') as f:
+        with open('back.json', 'r') as f:
             backup_data = json.load(f)
             notification_queue = backup_data.get("notify", [])
             message_queue = backup_data.get("mess", [])
@@ -688,7 +714,7 @@ def load_queues_from_backup():
             "mess":[] 
         }
 
-        with open('bagging.json', 'w') as f:
+        with open('back.json', 'w') as f:
             json.dump(new_data, f)  
     except Exception as err:
         print("No backup found or error loading backup:", err)
@@ -1011,6 +1037,40 @@ def check_switch_state():
         time.sleep(50 if curr_state == 1 else 0.1)
 
 
+def get_data():
+    data = []
+    with open("data.json", 'r') as f:
+        data= json.load(f)
+    
+    return data[0]['racks'][0];
+
+
+def schedule_checker():
+    print("Called")
+    global bins, rtc , data
+    while True:
+        config = get_data()
+        if not config:
+            return 
+        current_time = rtc.get_time()
+
+        print(current_time)
+        current_hour = str(current_time[3]) # Ensure hour and minute are two digits
+        current_minute = str(current_time[4])
+
+        current_hour = "0" + current_hour if len(current_hour) == 1   else current_hour;
+        current_minute = "0" + current_minute if len(current_minute) == 1   else current_minute;
+    
+        print(current_hour + " : " + current_minute)
+
+        for index, bin in enumerate(config['bins']):  # Corrected the variable names
+            for schedule in bin['schedules']:
+                hour, minute = tuple(schedule['time'].split(":"))
+                if schedule['enabled'] and hour == current_hour and minute == current_minute:
+                    bins[index].color = tuple(schedule['color'])
+                    bins[index].change_led_color()
+                    bin['clicked'] = False
+        time.sleep(60)
 
 
 
@@ -1020,4 +1080,16 @@ loaders()
 
 load_queues_from_backup()
 
-_thread.start_new_thread(check_switch_state, ())
+
+
+
+_thread.start_new_thread(schedule_checker, ())
+check_switch_state()
+
+
+        
+
+
+
+
+

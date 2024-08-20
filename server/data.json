@@ -1,17 +1,17 @@
 [
   {
-    "Group_id": "GRP -1",
-    "master_device_id": "KT-1",
+    "Group_id": "H1",
+    "master_device_id": "KT-4",
     "racks": [
       {
-        "rack_id": "1",
+        "rack_id": "4",
         "mac": [
           44,
           188,
           187,
           5,
-          23,
-          36
+          54,
+          236
         ],
         "bins": [
           {
@@ -21,7 +21,7 @@
               255
             ],
             "led_pin": 12,
-            "bin_id": "1_01",
+            "bin_id": "4_01",
             "button_pin": 13,
             "schedules": [],
             "enabled": true,
@@ -34,7 +34,7 @@
               255
             ],
             "led_pin": 25,
-            "bin_id": "1_02",
+            "bin_id": "4_02",
             "button_pin": 14,
             "schedules": [],
             "enabled": true,
@@ -47,7 +47,7 @@
               255
             ],
             "led_pin": 26,
-            "bin_id": "1_03",
+            "bin_id": "4_03",
             "button_pin": 15,
             "schedules": [],
             "enabled": true,
@@ -60,7 +60,7 @@
               255
             ],
             "led_pin": 27,
-            "bin_id": "1_04",
+            "bin_id": "4_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,
@@ -69,22 +69,22 @@
         ]
       },
       {
-        "rack_id": "2",
+        "rack_id": "3",
         "master": [
           44,
           188,
           187,
           5,
-          23,
-          36
+          54,
+          236
         ],
         "mac": [
           44,
           188,
           187,
           5,
-          52,
-          208
+          33,
+          8
         ],
         "bins": [
           {
@@ -94,7 +94,7 @@
               255
             ],
             "led_pin": 12,
-            "bin_id": "2_01",
+            "bin_id": "3_01",
             "button_pin": 13,
             "schedules": [],
             "enabled": true,
@@ -107,7 +107,7 @@
               255
             ],
             "led_pin": 25,
-            "bin_id": "2_02",
+            "bin_id": "3_02",
             "button_pin": 14,
             "schedules": [],
             "enabled": true,
@@ -120,7 +120,7 @@
               255
             ],
             "led_pin": 26,
-            "bin_id": "2_03",
+            "bin_id": "3_03",
             "button_pin": 15,
             "schedules": [],
             "enabled": true,
@@ -133,7 +133,7 @@
               255
             ],
             "led_pin": 27,
-            "bin_id": "2_04",
+            "bin_id": "3_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,
@@ -142,10 +142,5 @@
         ]
       }
     ]
-  },
-  {
-    "Group_id": "GRP -2",
-    "master_device_id": "KT-1222",
-    "racks": []
   }
 ]
