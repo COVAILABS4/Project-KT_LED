@@ -21,7 +21,7 @@ const Login = () => {
   const handleLogin = (e) => {
     e.preventDefault();
     axios
-      .post("http://localhost:5000/login", { email, password })
+      .post("http://192.168.231.31:5000/login", { email, password })
       .then((response) => {
         if (response.data.success) {
           localStorage.setItem("user", JSON.stringify(response.data.user));

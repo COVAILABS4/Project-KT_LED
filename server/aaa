@@ -108,5 +108,5 @@ app.post('/new/wrack', (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on http://192.168.231.31:${port}`);
 });

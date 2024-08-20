@@ -26,7 +26,7 @@ function App() {
 
   const fetchData = () => {
     axios
-      .get("http://localhost:5000/data")
+      .get("http://192.168.231.31:5000/data")
       .then((response) => {
         setData(response.data);
       })

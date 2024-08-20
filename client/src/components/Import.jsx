@@ -52,7 +52,7 @@ const Import = ({ fetchData }) => {
     formData.append("file", file);
 
     axios
-      .post("http://localhost:5000/import", formData)
+      .post("http://192.168.231.31:5000/import", formData)
       .then((response) => {
         setMessage("File uploaded successfully");
         fetchData();

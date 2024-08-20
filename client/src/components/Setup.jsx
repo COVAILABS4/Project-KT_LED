@@ -36,7 +36,7 @@ const Setup = ({ fetchData }) => {
 
   const handleGetIpAddress = () => {
     axios
-      .get("http://localhost:5000/address/getIP/" + device_id)
+      .get("http://192.168.231.31:5000/address/getIP/" + device_id)
       .then((response) => {
         console.log(response.data.ip);
         setIpAddress(response.data.ip || "");
@@ -60,7 +60,7 @@ const Setup = ({ fetchData }) => {
 
   const handleAddGroup = () => {
     axios
-      .post("http://localhost:5000/new/group", {
+      .post("http://192.168.231.31:5000/new/group", {
         newGroupid: newGroupId,
         newGroupDeviceId: newGroupDeviceId,
       })
@@ -73,7 +73,7 @@ const Setup = ({ fetchData }) => {
 
   const handleAddWrack = () => {
     axios
-      .post("http://localhost:5000/new/wrack", {
+      .post("http://192.168.231.31:5000/new/wrack", {
         Groupid: groupIdForWrack,
         newWrackid: newWrackId,
         id: macAddress,
@@ -94,7 +94,7 @@ const Setup = ({ fetchData }) => {
       color: selectedColor.split(",").map(Number),
     };
     axios
-      .post("http://localhost:5000/new/schedule", {
+      .post("http://192.168.231.31:5000/new/schedule", {
         group_id: groupIdForSchedule,
         wrack_id: wrackIdForSchedule,
         bin_id: binIdForSchedule,
@@ -117,7 +117,7 @@ const Setup = ({ fetchData }) => {
 
   const handleSetIpAddress = () => {
     axios
-      .post("http://localhost:5000/address/setIP", {
+      .post("http://192.168.231.31:5000/address/setIP", {
         ip: ipAddress,
         device_id: device_id,
       })
