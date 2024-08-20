@@ -11,10 +11,12 @@ const BinDetails = ({
   fetchData,
   setSelectedBin,
 }) => {
+  const ip = window.location.hostname;
+
   const toggleEnabled = async (group_id, rack_id, bin_id) => {
     try {
       const response = await axios.post(
-        "http://192.168.231.31:5000/bin/update/enabled",
+        "http://" + ip + ":5000/bin/update/enabled",
         {
           group_id,
           rack_id,
@@ -31,7 +33,7 @@ const BinDetails = ({
   const toggleClicked = async (group_id, rack_id, bin_id) => {
     try {
       const response = await axios.post(
-        "http://192.168.231.31:5000/bin/update/clicked",
+        "http://" + ip + ":5000/bin/update/clicked",
         {
           group_id,
           rack_id,

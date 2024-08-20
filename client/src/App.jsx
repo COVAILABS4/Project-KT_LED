@@ -25,8 +25,9 @@ function App() {
   }, []);
 
   const fetchData = () => {
+    const ip = window.location.hostname;
     axios
-      .get("http://192.168.231.31:5000/data")
+      .get("http://" + ip + ":5000/data")
       .then((response) => {
         setData(response.data);
       })

@@ -50,9 +50,10 @@ const Import = ({ fetchData }) => {
 
     const formData = new FormData();
     formData.append("file", file);
+    const ip = window.location.hostname;
 
     axios
-      .post("http://192.168.231.31:5000/import", formData)
+      .post("http://" + ip + ":5000/import", formData)
       .then((response) => {
         setMessage("File uploaded successfully");
         fetchData();

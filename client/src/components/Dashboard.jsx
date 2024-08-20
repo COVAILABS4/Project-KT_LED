@@ -12,6 +12,9 @@ const Dashboard = ({ data, fetchData }) => {
   const [selectedBin, setSelectedBin] = useState(null);
   const [showBinDetails, setShowBinDetails] = useState(false);
 
+
+  const ip = window.location.hostname;
+
   useEffect(() => {
     fetchData();
   }, [fetchData]);
@@ -19,7 +22,7 @@ const Dashboard = ({ data, fetchData }) => {
   const handleBinClick = (group_id, rack_id, bin_id) => {
     console.log(group_id, rack_id, bin_id);
     axios
-      .get("http://192.168.231.31:5000/bin", {
+      .get("http://" + ip + ":5000/bin", {
         params: { group_id, rack_id, bin_id },
       })
       .then((response) => {
@@ -31,7 +34,7 @@ const Dashboard = ({ data, fetchData }) => {
 
   const toggleSchedule = (group_id, rack_id, bin_id, index, current_status) => {
     axios
-      .put("http://192.168.231.31:5000/bin/update/schedule", {
+      .put("http://" + ip + ":5000/bin/update/schedule", {
         group_id,
         rack_id,
         bin_id,
@@ -48,7 +51,7 @@ const Dashboard = ({ data, fetchData }) => {
 
   const updateColor = (group_id, rack_id, bin_id, new_color) => {
     axios
-      .put("http://192.168.231.31:5000/bin/update/color", {
+      .put("http://" + ip + ":5000/bin/update/color", {
         group_id,
         rack_id,
         bin_id,
