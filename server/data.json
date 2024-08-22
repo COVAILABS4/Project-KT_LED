@@ -1,10 +1,10 @@
 [
   {
-    "Group_id": "H1",
-    "master_device_id": "KT-4",
+    "Group_id": "G1",
+    "master_device_id": "KT-1",
     "racks": [
       {
-        "rack_id": "4",
+        "rack_id": "R4",
         "mac": [
           44,
           188,
@@ -16,14 +16,24 @@
         "bins": [
           {
             "color": [
-              255,
-              255,
-              255
+              165,
+              42,
+              42
             ],
             "led_pin": 12,
-            "bin_id": "4_01",
+            "bin_id": "R4_01",
             "button_pin": 13,
-            "schedules": [],
+            "schedules": [
+              {
+                "time": "17:26",
+                "enabled": true,
+                "color": [
+                  165,
+                  42,
+                  42
+                ]
+              }
+            ],
             "enabled": true,
             "clicked": false
           },
@@ -34,7 +44,7 @@
               255
             ],
             "led_pin": 25,
-            "bin_id": "4_02",
+            "bin_id": "R4_02",
             "button_pin": 14,
             "schedules": [],
             "enabled": true,
@@ -47,7 +57,7 @@
               255
             ],
             "led_pin": 26,
-            "bin_id": "4_03",
+            "bin_id": "R4_03",
             "button_pin": 15,
             "schedules": [],
             "enabled": true,
@@ -60,7 +70,93 @@
               255
             ],
             "led_pin": 27,
-            "bin_id": "4_04",
+            "bin_id": "R4_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "Group_id": "G2",
+    "master_device_id": [
+      44,
+      188,
+      187,
+      5,
+      52,
+      208
+    ],
+    "racks": [
+      {
+        "rack_id": "GG",
+        "master": [
+          44,
+          188,
+          187,
+          5,
+          23,
+          36
+        ],
+        "mac": [
+          44,
+          188,
+          187,
+          5,
+          52,
+          208
+        ],
+        "bins": [
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 12,
+            "bin_id": "GG_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 25,
+            "bin_id": "GG_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 26,
+            "bin_id": "GG_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 27,
+            "bin_id": "GG_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,
@@ -69,14 +165,158 @@
         ]
       },
       {
-        "rack_id": "3",
+        "rack_id": "GGG",
         "master": [
           44,
           188,
           187,
           5,
-          54,
-          236
+          23,
+          36
+        ],
+        "mac": [
+          44,
+          188,
+          187,
+          6,
+          159,
+          228
+        ],
+        "bins": [
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 12,
+            "bin_id": "GGG_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 25,
+            "bin_id": "GGG_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 26,
+            "bin_id": "GGG_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 27,
+            "bin_id": "GGG_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "Group_id": "G3",
+    "master_device_id": "KT-6",
+    "racks": [
+      {
+        "rack_id": "SS",
+        "mac": [
+          44,
+          188,
+          187,
+          5,
+          23,
+          36
+        ],
+        "bins": [
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 12,
+            "bin_id": "SS_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 25,
+            "bin_id": "SS_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 26,
+            "bin_id": "SS_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 27,
+            "bin_id": "SS_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "SS2",
+        "master": [
+          44,
+          188,
+          187,
+          5,
+          23,
+          36
         ],
         "mac": [
           44,
@@ -94,7 +334,7 @@
               255
             ],
             "led_pin": 12,
-            "bin_id": "3_01",
+            "bin_id": "SS2_01",
             "button_pin": 13,
             "schedules": [],
             "enabled": true,
@@ -107,7 +347,7 @@
               255
             ],
             "led_pin": 25,
-            "bin_id": "3_02",
+            "bin_id": "SS2_02",
             "button_pin": 14,
             "schedules": [],
             "enabled": true,
@@ -120,7 +360,7 @@
               255
             ],
             "led_pin": 26,
-            "bin_id": "3_03",
+            "bin_id": "SS2_03",
             "button_pin": 15,
             "schedules": [],
             "enabled": true,
@@ -133,7 +373,80 @@
               255
             ],
             "led_pin": 27,
-            "bin_id": "3_04",
+            "bin_id": "SS2_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "SS5",
+        "master": [
+          44,
+          188,
+          187,
+          5,
+          23,
+          36
+        ],
+        "mac": [
+          44,
+          188,
+          187,
+          5,
+          56,
+          96
+        ],
+        "bins": [
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 12,
+            "bin_id": "SS5_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 25,
+            "bin_id": "SS5_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 26,
+            "bin_id": "SS5_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "led_pin": 27,
+            "bin_id": "SS5_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,

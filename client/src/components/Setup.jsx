@@ -19,7 +19,7 @@ const colors = [
   { name: "Lime", value: "0,255,123" },
 ];
 
-const Setup = ({ fetchData }) => {
+const Setup = ({ fetchData, groups, racks, bins }) => {
   const [newGroupId, setNewGroupId] = useState("");
   const [newGroupDeviceId, setNewGroupDeviceId] = useState("");
   const [groupIdForWrack, setGroupIdForWrack] = useState("");
@@ -34,6 +34,8 @@ const Setup = ({ fetchData }) => {
   const [device_id, setDeviceID] = useState("");
   const [newIP, setNewIP] = useState("");
   const ip = window.location.hostname;
+
+  console.log(groups);
 
   const handleGetIpAddress = () => {
     axios
@@ -130,6 +132,19 @@ const Setup = ({ fetchData }) => {
       .catch((error) => notify("Failed to set IP address", "error"));
   };
 
+  const handleDeleteRack = (rack) => {
+    axios
+      .post("http://" + ip + ":5000/delete/rack", {
+        Groupid: groupIdForWrack,
+        rackId: rack,
+      })
+      .then((response) => {
+        notify("Rack deleted successfully!", "success");
+        // Refresh or re-fetch racks here if needed
+      })
+      .catch((error) => notify("Failed to delete rack", "error"));
+  };
+
   return (
     <Container className="setup">
       <h1>Setup</h1>
@@ -216,27 +231,117 @@ const Setup = ({ fetchData }) => {
           </Card>
         </Col>
         <Col md={4}>
-          <Card className="setup-card">
+          <Card
+            className="setup-card"
+            style={{
+              borderRadius: "10px",
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+            }}
+          >
             <Card.Body>
-              <Card.Title>Add Wrack</Card.Title>
+              <Card.Title style={{ color: "#007bff", fontWeight: "bold" }}>
+                Add Rack
+              </Card.Title>
               <Form>
+                {/* Dropdown for selecting Group ID */}
                 <Form.Group controlId="groupIdForWrack">
                   <Form.Label>Group ID</Form.Label>
                   <Form.Control
-                    type="text"
+                    as="select"
                     value={groupIdForWrack || ""}
                     onChange={(e) => setGroupIdForWrack(e.target.value)}
-                  />
+                  >
+                    <option value="">Select Group</option>
+                    {groups.map((group, index) => (
+                      <option key={index} value={group}>
+                        {group}
+                      </option>
+                    ))}
+                  </Form.Control>
                 </Form.Group>
-                <Form.Group controlId="newWrackId">
-                  <Form.Label>New Wrack ID</Form.Label>
+
+                {/* Display existing racks for the selected group */}
+                {groupIdForWrack && (
+                  <div
+                    className="existing-racks"
+                    style={{
+                      marginTop: "20px",
+                      maxHeight: "150px",
+                      overflowY: "auto",
+                    }}
+                  >
+                    <h5 style={{ color: "#343a40" }}>
+                      Existing Racks in {groupIdForWrack}:
+                    </h5>
+                    {racks
+                      .filter((rack) => rack.group_id === groupIdForWrack)
+                      .map((rackItem, index) => (
+                        <div key={index} style={{ marginBottom: "10px" }}>
+                          {rackItem.racks.map((rack, rackIndex) => (
+                            <div
+                              key={rackIndex}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                padding: "5px",
+                                backgroundColor:
+                                  rackIndex === 0 ? "#e9f7f5" : "transparent",
+                                borderRadius: "5px",
+                                border:
+                                  rackIndex === 0
+                                    ? "1px solid #007bff"
+                                    : "none",
+                              }}
+                            >
+                              <p
+                                style={{
+                                  margin: 0,
+                                  fontWeight:
+                                    rackIndex === 0 ? "bold" : "normal",
+                                  color:
+                                    rackIndex === 0 ? "#007bff" : "#343a40",
+                                }}
+                              >
+                                {rackIndex + 1} : {" " + rack}
+                                {"  "}
+                                {rackIndex === 0 && "(master)"}
+                              </p>
+                              {rackIndex !== 0 && (
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleDeleteRack(rack)}
+                                  style={{ borderRadius: "5px" }}
+                                >
+                                  Delete
+                                </Button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                {/* Input for New Rack ID */}
+                <Form.Group
+                  controlId="newWrackId"
+                  style={{ marginTop: "20px" }}
+                >
+                  <Form.Label>New Rack ID</Form.Label>
                   <Form.Control
                     type="text"
                     value={newWrackId || ""}
                     onChange={(e) => setNewWrackId(e.target.value)}
                   />
                 </Form.Group>
-                <Form.Group controlId="macAddress">
+
+                {/* Input for MAC Address / Device ID */}
+                <Form.Group
+                  controlId="macAddress"
+                  style={{ marginTop: "10px" }}
+                >
                   <Form.Label>Device ID</Form.Label>
                   <Form.Control
                     type="text"
@@ -244,13 +349,24 @@ const Setup = ({ fetchData }) => {
                     onChange={(e) => setMacAddress(e.target.value)}
                   />
                 </Form.Group>
-                <Button variant="primary" onClick={handleAddWrack}>
-                  Add Wrack
+
+                {/* Button to Add Rack */}
+                <Button
+                  variant="primary"
+                  onClick={handleAddWrack}
+                  style={{
+                    marginTop: "20px",
+                    width: "100%",
+                    borderRadius: "5px",
+                  }}
+                >
+                  Add Rack
                 </Button>
               </Form>
             </Card.Body>
           </Card>
         </Col>
+
         <Col md={4}>
           <Card className="setup-card">
             <Card.Body>

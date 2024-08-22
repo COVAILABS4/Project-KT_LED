@@ -161,9 +161,9 @@ def config_all(config):
         bins.append(Bin(bin_config, i, config['rack_id']))
         print(f"Bin {i + 1} Configured")
         #time.sleep(0.5)  # Add delay to ensure hardware is properly configured
-    for i in bins:
-        i.turn_off_leds();
-    print("All bins initialized and ready.")
+#     for i in bins:
+#         i.turn_off_leds();
+#     print("All bins initialized and ready.")
 
 def add_peers_from_json(data):
     global e
@@ -781,9 +781,7 @@ def update_data_json_from_message(msg):
                 if updated:
                     break
 
-        if not updated:
-            print("Error: Group, rack, or bin not found")
-            return
+        
 
         with open('data.json', 'w') as f:
             json.dump(data, f)
@@ -834,7 +832,7 @@ def loaders():
     data = load_json_data('data.json')
     load_json_rack(data,wlan_mac)
 
-SSID = 'AB7'
+SSID = 'KT_AP'
 PASSWORD = '07070707'
 wlan_mac = get_mac()
 
@@ -943,6 +941,7 @@ def notify_slave(messing):
             print("Already")
         print(rc_mac,messing)
         e.send(rc_mac,messing)
+        time.sleep(4)
         print("Notified")
 
 def check_switch_state():
@@ -1037,6 +1036,41 @@ def check_switch_state():
         time.sleep(50 if curr_state == 1 else 0.1)
 
 
+def get_data():
+    data = []
+    with open("data.json", 'r') as f:
+        data= json.load(f)
+    
+    return data[0]['racks'][0];
+
+
+def schedule_checker():
+    print("Called")
+    global bins, rtc , data
+    while True:
+        config = get_data()
+        if not config:
+            return 
+        current_time = rtc.get_time()
+
+        print(current_time)
+        current_hour = str(current_time[3]) # Ensure hour and minute are two digits
+        current_minute = str(current_time[4])
+
+        current_hour = "0" + current_hour if len(current_hour) == 1   else current_hour;
+        current_minute = "0" + current_minute if len(current_minute) == 1   else current_minute;
+    
+        print(current_hour + " : " + current_minute)
+
+        for index, bin in enumerate(config['bins']):  # Corrected the variable names
+            for schedule in bin['schedules']:
+                hour, minute = tuple(schedule['time'].split(":"))
+                print(current_hour + " : " + current_minute ,"---",hour, minute )
+                if schedule['enabled'] and hour == current_hour and minute == current_minute:
+                    bins[index].color = tuple(schedule['color'])
+                    bins[index].change_led_color()
+                    bin['clicked'] = False
+        time.sleep(60)
 
 
 
@@ -1046,10 +1080,18 @@ loaders()
 
 load_queues_from_backup()
 
+
+
+
+_thread.start_new_thread(schedule_checker, ())
 check_switch_state()
 
 
         
+
+
+
+ 
 
 
 

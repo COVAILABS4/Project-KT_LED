@@ -8,6 +8,9 @@ const axios = require("axios");
 const app = express();
 const port = 5000;
 
+// console.log(serv);
+// const { updateBinClicked, updateBinColorESP, updatePushScheduleESP } = serv;
+
 app.use(cors());
 app.use(express.json());
 
@@ -172,6 +175,36 @@ app.post("/click/update", (req, res) => {
   res.send("Data updated successfully");
 });
 
+function denormalize(color) {
+  var new_color = Math.floor((color / 64) * 255);
+
+  return new_color;
+}
+app.post("/color/update", (req, res) => {
+  console.log("color Called");
+  const bin_details = req.body;
+  console.log(bin_details);
+  const color = bin_details.color;
+  updateCache(); // Ensure cache is up-to-date
+
+  let group = cache.find((group) => group.Group_id === bin_details.group_id);
+  if (!group) return res.status(404).json({ error: "Group not found" });
+
+  const rack = group.racks.find((rack) => rack.rack_id === bin_details.rack_id);
+  if (!rack) return res.status(404).json({ error: "Rack not found" });
+
+  const bin = rack.bins[bin_details.bin_idx];
+  if (!bin) return res.status(404).json({ error: "Bin not found" });
+
+  for (let index = 0; index < color.length; index++) {
+    color[index] = denormalize(color[index]);
+  }
+  bin.color = color;
+  bin.clicked = false;
+  saveDataToFile(cache);
+  res.send("Data updated successfully");
+});
+
 // Get data route
 app.get("/data", (req, res) => {
   try {
@@ -181,6 +214,29 @@ app.get("/data", (req, res) => {
     res.status(500).send("Error reading data.json");
   }
 });
+
+const updateSchedulesWithDelay = (scheduleDataArray) => {
+  console.log("Fined--2 : " + scheduleDataArray);
+
+  scheduleDataArray.forEach((scheduleData, index) => {
+    setTimeout(() => {
+      console.log(scheduleData);
+
+      let fail = updatePushScheduleESP(
+        scheduleData.group_id,
+        scheduleData.rack_id,
+        scheduleData.bin_id,
+        scheduleData.new_schedule_time,
+        scheduleData.color,
+        scheduleData.master_device_id
+      );
+
+      if (fail) return true;
+    }, index * 1000); // 1 second delay between each call
+  });
+
+  return false;
+};
 
 // Import route
 app.post("/import", upload.single("file"), (req, res) => {
@@ -415,6 +471,8 @@ app.post("/bin/update/enabled", (req, res) => {
   clone.rack_id = rack_id;
   res.json(clone);
 });
+
+// Update bin color
 
 // Toggle clicked
 app.post("/bin/update/clicked", (req, res) => {
@@ -655,46 +713,6 @@ app.post("/new/wrack", (req, res) => {
   res.json({ message: "Rack added or updated successfully", rack: newRack });
 });
 
-app.post("/delete/rack", (req, res) => {
-  const { Groupid, rackId } = req.body;
-
-  updateCache(); // Ensure cache is up-to-date
-
-  const group = cache.find((group) => group.Group_id === Groupid);
-  if (!group) {
-    return res.status(404).json({ error: "Group not found" });
-  }
-
-  const rackIndex = group.racks.findIndex((rack) => rack.rack_id === rackId);
-  if (rackIndex === -1) {
-    return res.status(404).json({ error: "Rack not found" });
-  }
-
-  // Remove the rack from the group
-  group.racks.splice(rackIndex, 1);
-
-  // Optionally, handle any additional cleanup or checks here
-  // For example, you might want to check if the group should still have a master MAC
-  if (group.racks.length === 0) {
-    group.master_device_id = null; // Clear the master device ID if no racks are left
-  } else if (rackIndex === 0) {
-    // If the first rack was removed, update the master MAC
-    group.master_device_id = group.racks[0].mac;
-  }
-
-  // Update the device or address mappings if needed
-  const fail = updateDELDRackESP(Groupid, rackId);
-  if (fail) {
-    return res
-      .status(500)
-      .json({ error: "Failed to update the device mappings" });
-  }
-
-  saveDataToFile(cache);
-
-  res.json({ message: "Rack deleted successfully", rackId: rackId });
-});
-
 app.post("/new/schedule", (req, res) => {
   const { group_id, wrack_id, bin_id, new_schduled } = req.body;
   updateCache(); // Ensure cache is up-to-date
@@ -777,7 +795,7 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-//=+-----------------COMMUNICATING WITH ESP------------------------------//
+//=+-----------------------------------------------//
 
 function normalize(data) {
   let normalize_data = (data / 255) * 64;
@@ -974,4 +992,5 @@ const updateADDGroupESP = (new_group_id, device_id) => {
   return false;
 };
 
+// Start the schedule checker function
 scheduleChecker();

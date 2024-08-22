@@ -12,12 +12,11 @@ const Dashboard = ({ data, fetchData }) => {
   const [selectedBin, setSelectedBin] = useState(null);
   const [showBinDetails, setShowBinDetails] = useState(false);
 
-
   const ip = window.location.hostname;
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  // useEffect(() => {
+  //   fetchData();
+  // }, [data]);
 
   const handleBinClick = (group_id, rack_id, bin_id) => {
     console.log(group_id, rack_id, bin_id);

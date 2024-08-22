@@ -440,11 +440,11 @@ def espnow_listener(config, rack_id):
                 print("Already added.")
 
         time.sleep(1)  # Minimal delay to keep the system running
-
+     
 def send_messages_from_queue():
     global message_queue, e ,master_mac
     #print(message_queue)
-    time.sleep(5)
+    
     while message_queue:
         master_mac, msg = message_queue.pop(0)
         print(master_mac, msg)
@@ -454,7 +454,6 @@ def send_messages_from_queue():
             print("Already added.")
         e.send(bytes(master_mac), msg)
         print(f"Sent message from queue to {master_mac}: {msg}")
-    e.send(bytes(master_mac),"finish".encode())
 config, master_mac, rack_id, e = None, None, None, None
 
 def main():
@@ -545,10 +544,11 @@ def schedule_checker():
         current_minute = "0" + current_minute if len(current_minute) == 1   else current_minute;
     
         print(current_hour + " : " + current_minute)
-
+        print(config['bins'])
         for index, bin in enumerate(config['bins']):  # Corrected the variable names
             for schedule in bin['schedules']:
                 hour, minute = tuple(schedule['time'].split(":"))
+                print(current_hour + " : " + current_minute ,"---",hour, minute )
                 if schedule['enabled'] and hour == current_hour and minute == current_minute:
                     bins[index].color = tuple(schedule['color'])
                     bins[index].change_led_color()
@@ -565,3 +565,5 @@ if __name__ == "__main__":
 
 
 
+
+ 

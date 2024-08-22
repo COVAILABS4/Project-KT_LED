@@ -1,4 +1,0 @@
-esptool --chip esp32 --port COM5 --baud 115200 erase_flash
-
-
-esptool --chip esp32 --port COM5 --baud 115200 write_flash -z 0x1000 D:\firmm\firm.bin
