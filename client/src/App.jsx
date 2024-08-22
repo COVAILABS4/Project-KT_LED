@@ -11,9 +11,17 @@ function App() {
   const [data, setData] = useState([]);
   const [login, setLogined] = useState(localStorage.getItem("user"));
 
+  const [devices, setDevices] = useState([]);
   const [groups, setGroups] = useState([]);
   const [racks, setRacks] = useState([]);
   const [bins, setBins] = useState([]);
+
+  const [availableDevices, setAvailableDevices] = useState([]);
+
+  const [availableStaticDevices, setAvailableStaticDevices] = useState([]);
+
+  const [masterDevices, setMasterDevices] = useState([]);
+  const [slaveDevices, setSlaveDevices] = useState([]);
 
   // setInterval(() => {
   //   fetchData();
@@ -21,7 +29,7 @@ function App() {
 
   useEffect(() => {
     // Call fetchData every second
-    const intervalId = setInterval(fetchData, 3000);
+    const intervalId = setInterval(fetchData, 1500);
 
     // fetchData();
     // Cleanup function to clear the interval when the component unmounts
@@ -49,16 +57,16 @@ function App() {
         let binObj = {
           group_id: group.Group_id,
           rack_id: rack.rack_id,
-          bin_1: [],
-          bin_2: [],
-          bin_3: [],
-          bin_4: [],
+          bin_01: [],
+          bin_02: [],
+          bin_03: [],
+          bin_04: [],
         };
 
         rack.bins.forEach((bin, index) => {
           if (index < 4) {
             // assuming only 4 bins per rack
-            binObj[`bin_${index + 1}`] = bin.schedules;
+            binObj[`bin_0${index + 1}`] = bin.schedules;
           }
         });
 
@@ -66,7 +74,7 @@ function App() {
       });
     });
 
-    console.log(groupArray, racksArray, binsArray);
+    // console.log(groupArray, racksArray, binsArray);
 
     setGroups(groupArray);
     setRacks(racksArray);
@@ -83,6 +91,60 @@ function App() {
         processResponseData(data);
       })
       .catch((error) => console.log(error));
+
+    axios
+      .get(`http://${ip}:5000/device`)
+      .then((response) => {
+        // console.log(response.data);
+
+        const devices = response.data;
+        // Filter available devices (where master_id is "")
+        const available = devices.filter((device) => device.master_id === "");
+        const others = devices.filter((device) => device.master_id !== "");
+
+        console.log(available);
+        // console.log(availableDevices);
+        // console.log();
+
+        setAvailableStaticDevices(available);
+        // setAllDevices(others);
+      })
+      .catch((error) => {
+        console.error("Error fetching device data:", error);
+        // alert("Failed to fetch device data");
+      });
+
+    axios
+      .get("http://localhost:5000/device/excel")
+      .then((response) => {
+        // console.log("Excel data:", response.data);
+
+        const master = [];
+        const slaves = [];
+        const availableAll = [];
+
+        response.data.forEach((device) => {
+          if (device.isMaster) {
+            master.push(device);
+          } else {
+            slaves.push(device);
+          }
+        });
+        // console.log(response.data);
+
+        response.data.forEach((device) => {
+          if (device.available) {
+            availableAll.push(device);
+          }
+        });
+
+        setMasterDevices(master);
+        setSlaveDevices(slaves);
+        setAvailableDevices(availableAll);
+      })
+      .catch((error) => {
+        console.error("Error fetching Excel data:", error);
+      });
   };
 
   return (
@@ -99,6 +161,8 @@ function App() {
               groups={groups}
               racks={racks}
               bins={bins}
+              availableDevices={availableDevices}
+              availableStaticDevices={availableStaticDevices}
             />
           }
         />

@@ -4,7 +4,7 @@ const fs = require("fs");
 const xlsx = require("xlsx");
 const multer = require("multer");
 const axios = require("axios");
-
+const path = require("path");
 const app = express();
 const port = 5000;
 
@@ -78,6 +78,42 @@ const readStaticIP = (device_id) => {
   }
 };
 
+app.get("/device", (req, res) => {
+  const filePath = path.join(__dirname, "static.json");
+
+  fs.readFile(filePath, "utf8", (err, data) => {
+    if (err) {
+      console.error("Error reading file:", err);
+      return res.status(500).json({ error: "Failed to read file" });
+    }
+
+    try {
+      const jsonData = JSON.parse(data);
+      res.json(jsonData);
+    } catch (parseError) {
+      console.error("Error parsing JSON:", parseError);
+      res.status(500).json({ error: "Failed to parse JSON" });
+    }
+  });
+});
+
+app.get("/device/excel", (req, res) => {
+  const workbook = xlsx.readFile("led_mac_data.xlsx"); // Replace with the actual file path
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const data = xlsx.utils.sheet_to_json(sheet);
+  // console.log(data);
+
+  // Extract only ID and isMaster fields
+  const extractedData = data.map((row) => ({
+    ID: row.ID,
+    isMaster: row.isMaster,
+    available: row.availability,
+  }));
+
+  res.json(extractedData);
+});
+
 // Utility function to write static IP to static.json
 const writeStaticIP = (newIP, id) => {
   try {
@@ -95,7 +131,7 @@ const writeStaticIP = (newIP, id) => {
       data[index].IP = newIP;
     } else {
       // Add a new object if the ID is not found
-      data.push({ IP: newIP, ID: id });
+      data.push({ IP: newIP, ID: id, master_id: "" });
     }
 
     // Write the updated data back to the file
@@ -122,10 +158,22 @@ app.get("/address/getIP/:id", (req, res) => {
 });
 
 // API to update the static IP
+app.post("/address/addIP", (req, res) => {
+  var { ip, device_id } = req.body;
+  try {
+    writeStaticIP(ip, device_id);
+    updateLedMacDataExcel(device_id);
+    res.json({ message: "Static IP updated successfully" });
+  } catch (error) {
+    res.status(500).send("Error updating static IP");
+  }
+});
+
 app.post("/address/setIP", (req, res) => {
   var { ip, device_id } = req.body;
   try {
     writeStaticIP(ip, device_id);
+    // updateLedMacDataExcel(device_id);
     res.json({ message: "Static IP updated successfully" });
   } catch (error) {
     res.status(500).send("Error updating static IP");
@@ -518,16 +566,138 @@ app.post("/new/group", (req, res) => {
     cache.push(newGroup);
   }
 
-  var fail = updateADDGroupESP(newGroupid, newGroupDeviceId);
+  // var fail = updateADDGroupESP(newGroupid, newGroupDeviceId);
 
-  if (fail) {
-    res.status(404).json({ error: "Failed to update the group in ESP" });
-    return;
-  }
+  // if (fail) {
+  //   res.status(404).json({ error: "Failed to update the group in ESP" });
+  //   return;
+  // }
+
+  // Save to static.json
+  updateStaticJson(newGroupid, newGroupDeviceId);
+
+  // Update led_mac_data.xlsx
+  // updateLedMacDataExcel(newGroupDeviceId, newGroupid);
 
   saveDataToFile(cache);
   res.json({ message: "Group added or updated successfully", group: newGroup });
 });
+
+app.post("/delete/group", (req, res) => {
+  const { groupId } = req.body;
+
+  updateCache(); // Ensure cache is up-to-date
+
+  // Find the index of the group by Group ID
+  const groupIndex = cache.findIndex((group) => group.Group_id === groupId);
+
+  if (groupIndex !== -1) {
+    // Remove the group from the cache
+    const deviceId = cache[groupIndex].master_device_id;
+    cache.splice(groupIndex, 1);
+    updateStaticJsonDelete(groupId, deviceId);
+    // Save to static.json
+    saveDataToFile(cache);
+
+    res.json({ message: "Group deleted successfully" });
+  } else {
+    res.status(404).json({ error: "Group not found" });
+  }
+});
+
+// Function to update static.json
+function updateStaticJsonDelete(groupId, deviceId) {
+  const staticFilePath = path.join(__dirname, "static.json");
+
+  let staticData = [];
+
+  // Read existing data
+  if (fs.existsSync(staticFilePath)) {
+    staticData = JSON.parse(fs.readFileSync(staticFilePath, "utf8"));
+  }
+
+  // Check if the device is already in the static.json
+  const existingDeviceIndex = staticData.findIndex(
+    (device) => device.ID === deviceId
+  );
+
+  const newEntry = {
+    IP: staticData[existingDeviceIndex].IP, // This needs to be set accordingly
+    ID: deviceId,
+    master_id: "",
+  };
+
+  if (existingDeviceIndex !== -1) {
+    // If it exists, update the entry
+    staticData[existingDeviceIndex] = newEntry;
+  } else {
+    // If it doesn't exist, add the new entry
+    staticData.push(newEntry);
+  }
+
+  // Write back to static.json
+  fs.writeFileSync(staticFilePath, JSON.stringify(staticData, null, 2), "utf8");
+}
+// Function to update static.json
+function updateStaticJson(groupId, deviceId) {
+  const staticFilePath = path.join(__dirname, "static.json");
+
+  let staticData = [];
+
+  // Read existing data
+  if (fs.existsSync(staticFilePath)) {
+    staticData = JSON.parse(fs.readFileSync(staticFilePath, "utf8"));
+  }
+
+  // Check if the device is already in the static.json
+  const existingDeviceIndex = staticData.findIndex(
+    (device) => device.ID === deviceId
+  );
+
+  const newEntry = {
+    IP: staticData[existingDeviceIndex].IP, // This needs to be set accordingly
+    ID: deviceId,
+    master_id: groupId,
+  };
+
+  if (existingDeviceIndex !== -1) {
+    // If it exists, update the entry
+    staticData[existingDeviceIndex] = newEntry;
+  } else {
+    // If it doesn't exist, add the new entry
+    staticData.push(newEntry);
+  }
+
+  // Write back to static.json
+  fs.writeFileSync(staticFilePath, JSON.stringify(staticData, null, 2), "utf8");
+}
+
+// Function to update led_mac_data.xlsx
+function updateLedMacDataExcel(deviceId) {
+  const ledMacDataFilePath = path.join(__dirname, "led_mac_data.xlsx");
+  // Load the Excel file
+  const workbook = xlsx.readFile(ledMacDataFilePath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+
+  const excel = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+  // Iterate through the rows to find the device
+  for (let i = 1; i < excel.length; i++) {
+    if (excel[i][0] === deviceId) {
+      excel[i][5] = true; // Set isMaster to true
+      // excel[i][6] = false; // Set availability to false
+      break;
+    }
+  }
+
+  // Convert JSON data back to sheet format
+  const newWorksheet = xlsx.utils.aoa_to_sheet(excel);
+  workbook.Sheets[sheetName] = newWorksheet;
+
+  // Write back to the Excel file
+  xlsx.writeFile(workbook, ledMacDataFilePath);
+}
 
 function readDeviceConfig(id) {
   let workbook;
@@ -682,13 +852,13 @@ app.post("/delete/rack", (req, res) => {
     group.master_device_id = group.racks[0].mac;
   }
 
-  // Update the device or address mappings if needed
-  const fail = updateDELDRackESP(Groupid, rackId);
-  if (fail) {
-    return res
-      .status(500)
-      .json({ error: "Failed to update the device mappings" });
-  }
+  // // Update the device or address mappings if needed
+  // const fail = updateDELDRackESP(Groupid, rackId);
+  // if (fail) {
+  //   return res
+  //     .status(500)
+  //     .json({ error: "Failed to update the device mappings" });
+  // }
 
   saveDataToFile(cache);
 
@@ -698,6 +868,8 @@ app.post("/delete/rack", (req, res) => {
 app.post("/new/schedule", (req, res) => {
   const { group_id, wrack_id, bin_id, new_schduled } = req.body;
   updateCache(); // Ensure cache is up-to-date
+
+  console.log(group_id, wrack_id, bin_id, new_schduled);
 
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
@@ -755,6 +927,46 @@ app.post("/new/schedule", (req, res) => {
   }
   saveDataToFile(cache);
   res.json({ message: "Schedule added successfully", bin: bin });
+});
+
+app.post("/delete/schedule", (req, res) => {
+  const { group_id, wrack_id, bin_id, scheduleIndex } = req.body;
+  updateCache(); // Ensure cache is up-to-date
+  console.log(group_id, wrack_id, bin_id, scheduleIndex);
+
+  const group = cache.find((group) => group.Group_id === group_id);
+  if (!group) return res.status(404).json({ error: "Group not found" });
+
+  const rack = group.racks.find((rack) => rack.rack_id === wrack_id);
+  if (!rack) return res.status(404).json({ error: "Rack not found" });
+
+  const bin = rack.bins.find((bin) => bin.bin_id === bin_id);
+  if (!bin) return res.status(404).json({ error: "Bin not found" });
+
+  if (scheduleIndex < 0 || scheduleIndex >= bin.schedules.length) {
+    return res.status(400).json({ error: "Invalid schedule index" });
+  }
+
+  const [deletedSchedule] = bin.schedules.splice(scheduleIndex, 1);
+
+  console.log("Deleted Schedule:", deletedSchedule);
+
+  // const fail = updatePushScheduleESP(
+  //   group_id,
+  //   wrack_id,
+  //   bin_id,
+  //   deletedSchedule.time,
+  //   deletedSchedule.color,
+  //   group.master_device_id
+  // );
+
+  // if (fail) {
+  //   res.status(500).json({ error: "Failed to update ESP device" });
+  //   return;
+  // }
+
+  saveDataToFile(cache);
+  res.json({ message: "Schedule deleted successfully", bin: bin });
 });
 
 let queue = [];

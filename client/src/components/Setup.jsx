@@ -6,6 +6,8 @@ import "react-toastify/dist/ReactToastify.css";
 import "./Setup.css";
 import "react-tooltip/dist/react-tooltip.css";
 import { Tooltip } from "react-tooltip";
+
+import Select from "react-select";
 const colors = [
   { name: "Red", value: "255,0,0" },
   { name: "Green", value: "0,255,0" },
@@ -19,7 +21,14 @@ const colors = [
   { name: "Lime", value: "0,255,123" },
 ];
 
-const Setup = ({ fetchData, groups, racks, bins }) => {
+const Setup = ({
+  fetchData,
+  groups,
+  racks,
+  bins,
+  availableDevices,
+  availableStaticDevices,
+}) => {
   const [newGroupId, setNewGroupId] = useState("");
   const [newGroupDeviceId, setNewGroupDeviceId] = useState("");
   const [groupIdForWrack, setGroupIdForWrack] = useState("");
@@ -33,18 +42,55 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
   const [ipAddress, setIpAddress] = useState("");
   const [device_id, setDeviceID] = useState("");
   const [newIP, setNewIP] = useState("");
-  const ip = window.location.hostname;
 
-  console.log(groups);
+  const deviceOptions = availableStaticDevices.map((device) => ({
+    value: device.ID,
+    label: device.ID,
+  }));
+
+  const deviceOptions1 = availableDevices.map((device) => ({
+    value: device.ID,
+    label: device.ID,
+  }));
+
+  const ip = window.location.hostname;
+  // console.log(availableDevices);
 
   const handleGetIpAddress = () => {
     axios
       .get("http://" + ip + ":5000/address/getIP/" + device_id)
       .then((response) => {
-        console.log(response.data.ip);
+        // console.log(response.data.ip);
         setIpAddress(response.data.ip || "");
       })
       .catch((error) => notify("Failed to fetch IP address", "error"));
+  };
+  const handleAddIpAddress = () => {
+    axios
+      .post("http://" + ip + ":5000/address/addIP", {
+        ip: ipAddress,
+        device_id: device_id,
+      })
+      .then((response) => {
+        setNewIP(ipAddress);
+        // setIpAddress("");
+        notify("IP address set successfully!", "success");
+      })
+      .catch((error) => notify("Failed to set IP address", "error"));
+  };
+
+  const handleSetIpAddress = () => {
+    axios
+      .post("http://" + ip + ":5000/address/setIP", {
+        ip: ipAddress,
+        device_id: device_id,
+      })
+      .then((response) => {
+        setNewIP(ipAddress);
+        // setIpAddress("");
+        notify("IP address set successfully!", "success");
+      })
+      .catch((error) => notify("Failed to set IP address", "error"));
   };
 
   const notify = (message, type) => {
@@ -65,7 +111,7 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
     axios
       .post("http://" + ip + ":5000/new/group", {
         newGroupid: newGroupId,
-        newGroupDeviceId: newGroupDeviceId,
+        newGroupDeviceId: newGroupDeviceId.value,
       })
       .then((response) => {
         notify("Group added successfully!", "success");
@@ -100,7 +146,7 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
       .post("http://" + ip + ":5000/new/schedule", {
         group_id: groupIdForSchedule,
         wrack_id: wrackIdForSchedule,
-        bin_id: binIdForSchedule,
+        bin_id: wrackIdForSchedule + binIdForSchedule,
         new_schduled: newSchedule,
       })
       .then((response) => {
@@ -118,20 +164,6 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
     setSelectedColor(colorValue);
   };
 
-  const handleSetIpAddress = () => {
-    axios
-      .post("http://" + ip + ":5000/address/setIP", {
-        ip: ipAddress,
-        device_id: device_id,
-      })
-      .then((response) => {
-        setNewIP(ipAddress);
-        // setIpAddress("");
-        notify("IP address set successfully!", "success");
-      })
-      .catch((error) => notify("Failed to set IP address", "error"));
-  };
-
   const handleDeleteRack = (rack) => {
     axios
       .post("http://" + ip + ":5000/delete/rack", {
@@ -145,6 +177,58 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
       .catch((error) => notify("Failed to delete rack", "error"));
   };
 
+  const handleDeleteGroup = async (groupId) => {
+    try {
+      await axios.post("http://" + ip + ":5000/delete/group", { groupId });
+      notify("Group deleted successfully!", "success");
+    } catch (error) {
+      notify("Failed to delete group", "error");
+    }
+  };
+
+  const groupOptions = groups.map((group) => ({
+    value: group,
+    label: group,
+  }));
+
+  const handleDeleteSchedule = (
+    groupIdForSchedule,
+    wrackIdForSchedule,
+    binIdForSchedule,
+    scheduleIndex
+  ) => {
+    const requestData = {
+      group_id: groupIdForSchedule,
+      wrack_id: wrackIdForSchedule,
+      bin_id: binIdForSchedule,
+      scheduleIndex: scheduleIndex,
+    };
+
+    axios
+      .post("http://" + ip + ":5000/delete/schedule", requestData)
+      .then((response) => {
+        notify("Schedule deleted successfully!", "success");
+        // Refresh or re-fetch racks here if needed
+      })
+      .catch((error) => notify("Failed to delete Schedule", "error"));
+  };
+
+  const handleSelectChange = (selectedOption) => {
+    setDeviceID(selectedOption ? selectedOption.value : "");
+  };
+
+  const [isAddingNew, setIsAddingNew] = useState(false);
+
+  const dropdownData = !isAddingNew ? availableStaticDevices : availableDevices;
+
+  const handleToggle = () => {
+    setIsAddingNew(!isAddingNew);
+  };
+
+  const options = dropdownData.map((device) => ({
+    value: device.ID,
+    label: device.ID,
+  }));
   return (
     <Container className="setup">
       <h1>Setup</h1>
@@ -153,56 +237,94 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
         <Col md={4}>
           <Card className="setup-card">
             <Card.Body>
-              <Card.Title>Set IP Address</Card.Title>
+              <Card.Title>Setup IP Address</Card.Title>
+              <Form.Check
+                type="switch"
+                id="custom-switch"
+                label={
+                  isAddingNew
+                    ? "Adding New Device"
+                    : "Get or Set Existing Device"
+                }
+                checked={isAddingNew}
+                onChange={handleToggle}
+                style={{ margin: "15px 0" }}
+              />
               <Form>
-                <Form.Group controlId="ipAddress">
+                <Form.Group controlId="deviceSelect">
                   <Form.Label>Device ID</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={device_id || ""}
-                    onChange={(e) => setDeviceID(e.target.value)}
+                  <Select
+                    value={options.find((option) => option.value === device_id)}
+                    onChange={handleSelectChange}
+                    options={options}
+                    isSearchable
+                    isClearable
+                    maxMenuHeight={150}
+                    isMulti={false}
+                    placeholder="Select Device"
                   />
 
                   <Form.Label>IP Address</Form.Label>
                   <Form.Control
                     type="text"
                     value={ipAddress || ""}
+                    placeholder="Enter IP Address"
                     onChange={(e) => setIpAddress(e.target.value)}
                   />
                 </Form.Group>
 
-                <Button
-                  variant="primary"
-                  onClick={handleGetIpAddress}
-                  style={{
-                    margin: "5px",
-                    padding: "10px 20px",
-                    backgroundColor: "#007bff",
-                    borderColor: "#007bff",
-                    borderRadius: "5px",
-                    fontSize: "16px",
-                  }}
-                >
-                  Get IP Address
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleSetIpAddress}
-                  style={{
-                    margin: "5px",
-                    padding: "10px 20px",
-                    backgroundColor: "#007bff",
-                    borderColor: "#007bff",
-                    borderRadius: "5px",
-                    fontSize: "16px",
-                  }}
-                >
-                  Set IP Address
-                </Button>
+                {!isAddingNew ? (
+                  <div>
+                    <Button
+                      variant="primary"
+                      onClick={handleGetIpAddress}
+                      style={{
+                        margin: "5px",
+                        padding: "10px 20px",
+                        backgroundColor: "#007bff",
+                        borderColor: "#007bff",
+                        borderRadius: "5px",
+                        fontSize: "16px",
+                      }}
+                    >
+                      Get IP Address
+                    </Button>
+                    <Button
+                      variant="primary"
+                      onClick={handleSetIpAddress}
+                      style={{
+                        margin: "5px",
+                        padding: "10px 20px",
+                        backgroundColor: "#007bff",
+                        borderColor: "#007bff",
+                        borderRadius: "5px",
+                        fontSize: "16px",
+                      }}
+                    >
+                      Set IP Address
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="primary"
+                    onClick={handleAddIpAddress}
+                    style={{
+                      margin: "5px",
+                      padding: "10px 20px",
+                      backgroundColor: "#007bff",
+                      borderColor: "#007bff",
+                      borderRadius: "5px",
+                      fontSize: "16px",
+                    }}
+                  >
+                    Add
+                  </Button>
+                )}
               </Form>
             </Card.Body>
           </Card>
         </Col>
+
         <Col md={4}>
           <Card className="setup-card">
             <Card.Body>
@@ -212,24 +334,89 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
                   <Form.Label>New Group ID</Form.Label>
                   <Form.Control
                     type="text"
+                    placeholder="Enter Group ID"
                     value={newGroupId || ""}
                     onChange={(e) => setNewGroupId(e.target.value)}
                   />
-
+                </Form.Group>
+                <Form.Group controlId="newGroupDeviceId">
                   <Form.Label>New Group Device ID</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={newGroupDeviceId || ""}
-                    onChange={(e) => setNewGroupDeviceId(e.target.value)}
+                  <Select
+                    options={deviceOptions}
+                    value={newGroupDeviceId}
+                    onChange={setNewGroupDeviceId}
+                    isSearchable={true}
+                    isClearable
+                    placeholder="Select Device ID"
+                    maxMenuHeight={160}
                   />
                 </Form.Group>
-                <Button variant="primary" onClick={handleAddGroup}>
-                  Add Group
+                <Button
+                  style={{
+                    width: "100%",
+                    marginTop: "15px",
+                  }}
+                  variant="primary"
+                  onClick={handleAddGroup}
+                >
+                  Add
                 </Button>
               </Form>
+
+              {/* Division for Existing Groups */}
+              {groups.length != 0 && (
+                <Card.Title style={{ marginTop: "20px" }}>
+                  Existing Groups
+                </Card.Title>
+              )}
+              {groups && (
+                <div
+                  className="existing-groups"
+                  style={{
+                    marginTop: "20px",
+                    maxHeight: "150px",
+                    overflowY: "auto",
+                  }}
+                >
+                  {groups.map((group, index) => (
+                    <div key={index} style={{ marginBottom: "10px" }}>
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "5px",
+                          backgroundColor: "transparent",
+                          borderRadius: "5px",
+                          border: "none",
+                        }}
+                      >
+                        <p
+                          style={{
+                            margin: 0,
+                            fontWeight: "normal",
+                            color: "#343a40",
+                          }}
+                        >
+                          {index + 1} {" : " + group}
+                        </p>
+                        <Button
+                          variant="danger"
+                          size="sm"
+                          onClick={() => handleDeleteGroup(group)}
+                          style={{ borderRadius: "5px" }}
+                        >
+                          Delete
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </Card.Body>
           </Card>
         </Col>
+
         <Col md={4}>
           <Card
             className="setup-card"
@@ -243,21 +430,22 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
                 Add Rack
               </Card.Title>
               <Form>
-                {/* Dropdown for selecting Group ID */}
+                {/* Dropdown for selecting Group ID using react-select */}
                 <Form.Group controlId="groupIdForWrack">
                   <Form.Label>Group ID</Form.Label>
-                  <Form.Control
-                    as="select"
-                    value={groupIdForWrack || ""}
-                    onChange={(e) => setGroupIdForWrack(e.target.value)}
-                  >
-                    <option value="">Select Group</option>
-                    {groups.map((group, index) => (
-                      <option key={index} value={group}>
-                        {group}
-                      </option>
-                    ))}
-                  </Form.Control>
+                  <Select
+                    options={groupOptions}
+                    value={groupOptions.find(
+                      (option) => option.value === groupIdForWrack
+                    )}
+                    onChange={(selectedOption) =>
+                      setGroupIdForWrack(selectedOption.value)
+                    }
+                    isSearchable={true}
+                    isClearable
+                    placeholder="Select Group"
+                    maxMenuHeight={160}
+                  />
                 </Form.Group>
 
                 {/* Display existing racks for the selected group */}
@@ -271,7 +459,21 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
                     }}
                   >
                     <h5 style={{ color: "#343a40" }}>
-                      Existing Racks in {groupIdForWrack}:
+                      {(() => {
+                        const filteredRacks = racks.filter(
+                          (rack) => rack.group_id === groupIdForWrack
+                        );
+
+                        // Check if the filtered result contains any racks
+                        if (
+                          filteredRacks.length > 0 &&
+                          filteredRacks[0].racks.length > 0
+                        ) {
+                          return "Existing Racks in " + groupIdForWrack;
+                        } else {
+                          return "No Racks found";
+                        }
+                      })()}
                     </h5>
                     {racks
                       .filter((rack) => rack.group_id === groupIdForWrack)
@@ -337,16 +539,38 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
                   />
                 </Form.Group>
 
-                {/* Input for MAC Address / Device ID */}
+                {/* Dropdown for selecting available Device ID using react-select */}
                 <Form.Group
                   controlId="macAddress"
                   style={{ marginTop: "10px" }}
                 >
                   <Form.Label>Device ID</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={macAddress || ""}
-                    onChange={(e) => setMacAddress(e.target.value)}
+                  <Select
+                    options={(() => {
+                      const filteredRacks = racks.filter(
+                        (rack) => rack.group_id === groupIdForWrack
+                      );
+
+                      // Check if the filtered result contains any racks
+                      if (
+                        filteredRacks.length > 0 &&
+                        filteredRacks[0].racks.length > 0
+                      ) {
+                        return deviceOptions1;
+                      } else {
+                        return availableStaticDevices;
+                      }
+                    })()}
+                    value={deviceOptions1.find(
+                      (option) => option.value === macAddress
+                    )}
+                    onChange={(selectedOption) =>
+                      setMacAddress(selectedOption.value)
+                    }
+                    isSearchable={true}
+                    isClearable
+                    placeholder="Select Device ID"
+                    maxMenuHeight={160}
                   />
                 </Form.Group>
 
@@ -368,35 +592,163 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
         </Col>
 
         <Col md={4}>
-          <Card className="setup-card">
+          <Card
+            className="setup-card"
+            style={{
+              borderRadius: "10px",
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+            }}
+          >
             <Card.Body>
-              <Card.Title>Add Schedule</Card.Title>
+              <Card.Title style={{ color: "#007bff", fontWeight: "bold" }}>
+                Add Schedule
+              </Card.Title>
               <Form>
+                {/* Dropdown for selecting Group ID */}
                 <Form.Group controlId="groupIdForSchedule">
                   <Form.Label>Group ID</Form.Label>
                   <Form.Control
-                    type="text"
+                    as="select"
                     value={groupIdForSchedule || ""}
                     onChange={(e) => setGroupIdForSchedule(e.target.value)}
-                  />
+                  >
+                    <option value="">Select Group</option>
+                    {groups.map((group, index) => (
+                      <option key={index} value={group}>
+                        {group}
+                      </option>
+                    ))}
+                  </Form.Control>
                 </Form.Group>
+
+                {/* Dropdown for selecting Rack ID */}
                 <Form.Group controlId="wrackIdForSchedule">
-                  <Form.Label>Wrack ID</Form.Label>
+                  <Form.Label>Rack ID</Form.Label>
                   <Form.Control
-                    type="text"
+                    as="select"
                     value={wrackIdForSchedule || ""}
                     onChange={(e) => setWrackIdForSchedule(e.target.value)}
-                  />
+                  >
+                    <option value="">Select Rack</option>
+                    {racks
+                      .filter((rack) => rack.group_id === groupIdForSchedule)
+                      .map((rack, rackIndex) => {
+                        return rack.racks.map((id, idIndex) => (
+                          <option key={`${rackIndex}-${idIndex}`} value={id}>
+                            {id}
+                          </option>
+                        ));
+                      })}
+                  </Form.Control>
                 </Form.Group>
+
+                {/* Dropdown for selecting Bin ID */}
                 <Form.Group controlId="binIdForSchedule">
                   <Form.Label>Bin ID</Form.Label>
                   <Form.Control
-                    type="text"
+                    as="select"
                     value={binIdForSchedule || ""}
                     onChange={(e) => setBinIdForSchedule(e.target.value)}
-                  />
+                  >
+                    <option value="">Select Bin</option>
+                    {["_01", "_02", "_03", "_04"].map((num, index) => {
+                      return (
+                        <option key={index} value={`${num}`}>
+                          {`${wrackIdForSchedule}${num}`}
+                        </option>
+                      );
+                    })}
+                  </Form.Control>
                 </Form.Group>
-                <Form.Group controlId="scheduleTime">
+
+                {/* Display existing schedules for the selected bin */}
+                {binIdForSchedule && (
+                  <h5 style={{ color: "#343a40" }}>
+                    Existing Schedules for{" "}
+                    {wrackIdForSchedule + binIdForSchedule}:
+                  </h5>
+                )}
+                {binIdForSchedule &&
+                  bins
+                    .filter(
+                      (bin) =>
+                        bin.group_id === groupIdForSchedule &&
+                        bin.rack_id === wrackIdForSchedule
+                    )
+                    .map((filteredBin, index) => {
+                      const schedules = filteredBin["bin" + binIdForSchedule];
+
+                      return (
+                        <div
+                          key={index}
+                          className="existing-schedules"
+                          style={{
+                            marginTop: "20px",
+                            maxHeight: "150px",
+                            overflowY: "auto",
+                          }}
+                        >
+                          {schedules && schedules.length > 0 ? (
+                            schedules.map((scheduleItem, scheduleIndex) => (
+                              <div
+                                key={scheduleIndex}
+                                style={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  padding: "10px",
+                                  backgroundColor: `rgb(${scheduleItem.color.join(
+                                    ","
+                                  )})`,
+                                  borderRadius: "5px",
+                                  marginBottom: "10px",
+                                  border: scheduleItem.enabled
+                                    ? "2px solid #007bff"
+                                    : "1px solid #ccc",
+                                }}
+                              >
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontWeight: "bold",
+                                    color: `rgb(${scheduleItem.color
+                                      .map((color) => 255 - color)
+                                      .join(",")})`,
+                                  }}
+                                >
+                                  {scheduleIndex + 1}
+                                  {" : "} {scheduleItem.time}{" "}
+                                  {scheduleItem.enabled && "(enabled)"}
+                                </p>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDeleteSchedule(
+                                      groupIdForSchedule,
+                                      wrackIdForSchedule,
+                                      `${wrackIdForSchedule}${binIdForSchedule}`,
+                                      scheduleIndex
+                                    )
+                                  }
+                                  style={{ borderRadius: "5px" }}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            ))
+                          ) : (
+                            <p>No schedules available for this bin.</p>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                {/* Input for Schedule Time */}
+                <Form.Group
+                  controlId="scheduleTime"
+                  style={{ marginTop: "20px" }}
+                >
                   <Form.Label>Schedule Time</Form.Label>
                   <Form.Control
                     type="time"
@@ -404,7 +756,9 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
                     onChange={(e) => setScheduleTime(e.target.value)}
                   />
                 </Form.Group>
-                <Form.Group controlId="color">
+
+                {/* Color Selector */}
+                <Form.Group controlId="color" style={{ marginTop: "10px" }}>
                   <Form.Label>Color</Form.Label>
                   <div className="color-selector">
                     {colors.map((color, index) => (
@@ -423,14 +777,23 @@ const Setup = ({ fetchData, groups, racks, bins }) => {
                         }}
                         onClick={() => handleColorSelect(color.value)}
                       >
-                        {/* This is where the tooltip is referenced by its ID */}
+                        {/* Tooltip for color */}
                         <Tooltip id={`tooltip-${index}`} />
                       </div>
                     ))}
                   </div>
                 </Form.Group>
 
-                <Button variant="primary" onClick={handleAddSchedule}>
+                {/* Button to Add Schedule */}
+                <Button
+                  variant="primary"
+                  onClick={handleAddSchedule}
+                  style={{
+                    marginTop: "20px",
+                    width: "100%",
+                    borderRadius: "5px",
+                  }}
+                >
                   Add Schedule
                 </Button>
               </Form>
