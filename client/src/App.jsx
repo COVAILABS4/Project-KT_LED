@@ -19,9 +19,12 @@ function App() {
   const [availableDevices, setAvailableDevices] = useState([]);
 
   const [availableStaticDevices, setAvailableStaticDevices] = useState([]);
+  const [AllStaticDevices, setAllStaticDevices] = useState([]);
 
   const [masterDevices, setMasterDevices] = useState([]);
   const [slaveDevices, setSlaveDevices] = useState([]);
+
+  const [forSetIP, setForSetIP] = useState([]);
 
   // setInterval(() => {
   //   fetchData();
@@ -43,12 +46,20 @@ function App() {
 
     data.forEach((group) => {
       // Populate groups array
-      groupArray.push(group.Group_id);
+      groupArray.push({
+        group_id: group.Group_id,
+        device_id: group.master_device_id,
+      });
+
+      console.log(groupArray);
 
       // Populate racks array
       let rackObj = { group_id: group.Group_id, racks: [] };
       group.racks.forEach((rack) => {
-        rackObj.racks.push(rack.rack_id);
+        rackObj.racks.push({
+          rack_id: rack.rack_id,
+          device_id: rack.device_id,
+        });
       });
       racksArray.push(rackObj);
 
@@ -100,11 +111,14 @@ function App() {
         const devices = response.data;
         // Filter available devices (where master_id is "")
         const available = devices.filter((device) => device.master_id === "");
+        // const all = devices.filter((device) => device.master_id === "");
         const others = devices.filter((device) => device.master_id !== "");
 
-        console.log(available);
+        // console.log(available);
         // console.log(availableDevices);
         // console.log();
+
+        setAllStaticDevices(devices);
 
         setAvailableStaticDevices(available);
         // setAllDevices(others);
@@ -122,15 +136,20 @@ function App() {
         const master = [];
         const slaves = [];
         const availableAll = [];
+        const forSetIParray = [];
 
         response.data.forEach((device) => {
-          if (device.isMaster) {
-            master.push(device);
-          } else {
+          if (!device.isMaster && device.available) {
             slaves.push(device);
           }
         });
-        // console.log(response.data);
+        console.log(slaves);
+
+        response.data.forEach((device) => {
+          if (device.available && !device.isMaster) {
+            forSetIParray.push(device);
+          }
+        });
 
         response.data.forEach((device) => {
           if (device.available) {
@@ -141,6 +160,7 @@ function App() {
         setMasterDevices(master);
         setSlaveDevices(slaves);
         setAvailableDevices(availableAll);
+        setForSetIP(forSetIParray);
       })
       .catch((error) => {
         console.error("Error fetching Excel data:", error);
@@ -163,6 +183,9 @@ function App() {
               bins={bins}
               availableDevices={availableDevices}
               availableStaticDevices={availableStaticDevices}
+              forSetIP={forSetIP}
+              AllStaticDevices={AllStaticDevices}
+              slaveDevices={slaveDevices}
             />
           }
         />

@@ -5,6 +5,7 @@ const xlsx = require("xlsx");
 const multer = require("multer");
 const axios = require("axios");
 const path = require("path");
+const { log } = require("util");
 const app = express();
 const port = 5000;
 
@@ -115,7 +116,7 @@ app.get("/device/excel", (req, res) => {
 });
 
 // Utility function to write static IP to static.json
-const writeStaticIP = (newIP, id) => {
+const writeStaticIP = (newIP, id, operation) => {
   try {
     // Read the existing data from the file
     let data = [];
@@ -142,12 +143,12 @@ const writeStaticIP = (newIP, id) => {
   }
 };
 
-app.get("/address/getIP/:id", (req, res) => {
+app.get("/address/getIP/:group_id", (req, res) => {
   try {
-    const { id } = req.params;
+    const { group_id } = req.params;
 
-    console.log(id);
-    var staticIP = readStaticIP(id);
+    console.log(group_id);
+    var staticIP = readStaticIP(read_device(group_id));
 
     if (staticIP == "") res.status(404);
     console.log(staticIP);
@@ -161,18 +162,49 @@ app.get("/address/getIP/:id", (req, res) => {
 app.post("/address/addIP", (req, res) => {
   var { ip, device_id } = req.body;
   try {
-    writeStaticIP(ip, device_id);
-    updateLedMacDataExcel(device_id);
+    writeStaticIP(ip, device_id, "add");
+
     res.json({ message: "Static IP updated successfully" });
   } catch (error) {
     res.status(500).send("Error updating static IP");
   }
 });
 
-app.post("/address/setIP", (req, res) => {
-  var { ip, device_id } = req.body;
+const read_device = (group_id) => {
   try {
-    writeStaticIP(ip, device_id);
+    const fileContent = fs.readFileSync("./static.json", "utf8");
+    const data = JSON.parse(fileContent);
+
+    let device_id = "";
+
+    for (let index = 0; index < data.length; index++) {
+      if (data[index].master_id == group_id) {
+        device_id = data[index].ID;
+        break;
+      }
+    }
+
+    return device_id;
+  } catch (error) {
+    console.error("Error reading static.json:", error);
+    throw new Error("Error reading static.json");
+  }
+};
+
+app.post("/address/setIP", (req, res) => {
+  var { group_id, ip } = req.body;
+  try {
+    let device_id = read_device(group_id);
+
+    writeStaticIP(ip, device_id, "set");
+
+    var fail = updateADDGroupESP(group_id, device_id);
+
+    if (fail) {
+      res.status(404).json({ error: "Failed to update the group in ESP" });
+      return;
+    }
+
     // updateLedMacDataExcel(device_id);
     res.json({ message: "Static IP updated successfully" });
   } catch (error) {
@@ -539,32 +571,35 @@ app.post("/new/group", (req, res) => {
   console.log(newGroupid, newGroupDeviceId);
   updateCache(); // Ensure cache is up-to-date
 
-  // Find the index of the existing group by Group ID (if any)
-  const existingGroupIndexById = cache.findIndex(
+  // Check if a group with the same Group ID already exists
+  const existingGroupById = cache.find(
     (group) => group.Group_id === newGroupid
   );
 
-  // Find the index of the existing group by Device ID (if any)
-  const existingGroupIndexByDeviceId = cache.findIndex(
+  // Check if a group with the same Device ID already exists
+  const existingGroupByDeviceId = cache.find(
     (group) => group.master_device_id === newGroupDeviceId
   );
 
+  if (existingGroupById) {
+    return res.status(400).json({ error: "Group with this ID already exists" });
+  }
+
+  if (existingGroupByDeviceId) {
+    return res
+      .status(400)
+      .json({ error: "Group with this Device ID already exists" });
+  }
+
+  // Create a new group if it doesn't exist
   const newGroup = {
     Group_id: newGroupid,
     master_device_id: newGroupDeviceId,
     racks: [], // Initialize with an empty array for racks
   };
 
-  if (existingGroupIndexById !== -1) {
-    // If the group exists by Group ID, replace it
-    cache[existingGroupIndexById] = newGroup;
-  } else if (existingGroupIndexByDeviceId !== -1) {
-    // If the group exists by Device ID, replace it
-    cache[existingGroupIndexByDeviceId] = newGroup;
-  } else {
-    // If the group doesn't exist by either ID, add it
-    cache.push(newGroup);
-  }
+  // Add the new group to the cache
+  cache.push(newGroup);
 
   // var fail = updateADDGroupESP(newGroupid, newGroupDeviceId);
 
@@ -575,12 +610,10 @@ app.post("/new/group", (req, res) => {
 
   // Save to static.json
   updateStaticJson(newGroupid, newGroupDeviceId);
-
-  // Update led_mac_data.xlsx
-  // updateLedMacDataExcel(newGroupDeviceId, newGroupid);
+  updateLedMacDataExcel(newGroupDeviceId, "add");
 
   saveDataToFile(cache);
-  res.json({ message: "Group added or updated successfully", group: newGroup });
+  res.json({ message: "Group added successfully", group: newGroup });
 });
 
 app.post("/delete/group", (req, res) => {
@@ -594,8 +627,16 @@ app.post("/delete/group", (req, res) => {
   if (groupIndex !== -1) {
     // Remove the group from the cache
     const deviceId = cache[groupIndex].master_device_id;
-    cache.splice(groupIndex, 1);
+    let removedGroup = cache.splice(groupIndex, 1);
     updateStaticJsonDelete(groupId, deviceId);
+    console.log(removedGroup);
+    if (removedGroup[0].racks[0]) {
+      updateLedMacDataExcel(removedGroup[0].racks[0].device_id, "delete");
+      removedGroup[0].racks.forEach((data, index) => {
+        updateLedMacDataExcelFinal(data.device_id, "delete");
+      });
+    }
+
     // Save to static.json
     saveDataToFile(cache);
 
@@ -609,6 +650,8 @@ app.post("/delete/group", (req, res) => {
 function updateStaticJsonDelete(groupId, deviceId) {
   const staticFilePath = path.join(__dirname, "static.json");
 
+  console.log(groupId, deviceId);
+
   let staticData = [];
 
   // Read existing data
@@ -616,28 +659,19 @@ function updateStaticJsonDelete(groupId, deviceId) {
     staticData = JSON.parse(fs.readFileSync(staticFilePath, "utf8"));
   }
 
-  // Check if the device is already in the static.json
+  // // Check if the device is already in the static.json
   const existingDeviceIndex = staticData.findIndex(
-    (device) => device.ID === deviceId
+    (device) => device.master_id === groupId
   );
 
-  const newEntry = {
-    IP: staticData[existingDeviceIndex].IP, // This needs to be set accordingly
-    ID: deviceId,
-    master_id: "",
-  };
-
   if (existingDeviceIndex !== -1) {
-    // If it exists, update the entry
-    staticData[existingDeviceIndex] = newEntry;
-  } else {
-    // If it doesn't exist, add the new entry
-    staticData.push(newEntry);
+    staticData.splice(existingDeviceIndex, 1);
   }
 
-  // Write back to static.json
+  // // Write back to static.json
   fs.writeFileSync(staticFilePath, JSON.stringify(staticData, null, 2), "utf8");
 }
+
 // Function to update static.json
 function updateStaticJson(groupId, deviceId) {
   const staticFilePath = path.join(__dirname, "static.json");
@@ -655,7 +689,7 @@ function updateStaticJson(groupId, deviceId) {
   );
 
   const newEntry = {
-    IP: staticData[existingDeviceIndex].IP, // This needs to be set accordingly
+    IP: "",
     ID: deviceId,
     master_id: groupId,
   };
@@ -673,7 +707,7 @@ function updateStaticJson(groupId, deviceId) {
 }
 
 // Function to update led_mac_data.xlsx
-function updateLedMacDataExcel(deviceId) {
+function updateLedMacDataExcel(deviceId, operation) {
   const ledMacDataFilePath = path.join(__dirname, "led_mac_data.xlsx");
   // Load the Excel file
   const workbook = xlsx.readFile(ledMacDataFilePath);
@@ -685,8 +719,37 @@ function updateLedMacDataExcel(deviceId) {
   // Iterate through the rows to find the device
   for (let i = 1; i < excel.length; i++) {
     if (excel[i][0] === deviceId) {
-      excel[i][5] = true; // Set isMaster to true
-      // excel[i][6] = false; // Set availability to false
+      excel[i][5] = operation === "add" ? true : false;
+      break;
+    }
+  }
+
+  // Convert JSON data back to sheet format
+  const newWorksheet = xlsx.utils.aoa_to_sheet(excel);
+  workbook.Sheets[sheetName] = newWorksheet;
+
+  // Write back to the Excel file
+  xlsx.writeFile(workbook, ledMacDataFilePath);
+}
+
+function updateLedMacDataExcelFinal(deviceId, operation) {
+  console.log(deviceId, operation);
+
+  const ledMacDataFilePath = path.join(__dirname, "led_mac_data.xlsx");
+  // Load the Excel file
+  const workbook = xlsx.readFile(ledMacDataFilePath);
+  const sheetName = workbook.SheetNames[0];
+  const worksheet = workbook.Sheets[sheetName];
+
+  const excel = xlsx.utils.sheet_to_json(worksheet, { header: 1 });
+
+  // Iterate through the rows to find the device
+  for (let i = 1; i < excel.length; i++) {
+    if (excel[i][0] === deviceId) {
+      if (operation === "add") excel[i][6] = false;
+      else excel[i][6] = true;
+      // excel[i][5] = true; // Set isMaster to true
+      // Set availability to false
       break;
     }
   }
@@ -711,9 +774,10 @@ function readDeviceConfig(id) {
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
   const users = xlsx.utils.sheet_to_json(sheet);
-  console.log(users);
+  // console.log(users);
 
   const device = users.find((row) => row.ID === id);
+
   if (!device) {
     throw new Error("Device ID not found");
   }
@@ -724,6 +788,7 @@ function readDeviceConfig(id) {
 app.post("/new/wrack", (req, res) => {
   const { Groupid, newWrackid, id } = req.body;
   updateCache(); // Ensure cache is up-to-date
+  console.log(Groupid, newWrackid, "--" + id + "--");
 
   let mac;
   try {
@@ -736,9 +801,11 @@ app.post("/new/wrack", (req, res) => {
   if (!group) return res.status(404).json({ error: "Group not found" });
 
   // Check if rack already exists in the current group
-  const existingRackIndex = group.racks.findIndex(
-    (rack) => rack.rack_id === newWrackid
-  );
+  const existingRack = group.racks.find((rack) => rack.rack_id === newWrackid);
+
+  if (existingRack) {
+    return res.status(400).json({ error: "Rack already exists" });
+  }
 
   const newRack = {
     rack_id: newWrackid,
@@ -780,6 +847,8 @@ app.post("/new/wrack", (req, res) => {
     newRack.mac = curr_mac;
   }
 
+  newRack.device_id = id;
+
   const ledPins = [12, 25, 26, 27]; // Replace with your actual led pin values
   const buttonPins = [13, 14, 15, 16]; // Replace with your actual button pin values
 
@@ -800,13 +869,8 @@ app.post("/new/wrack", (req, res) => {
     group.racks = []; // Clear all racks if MACs match
   }
 
-  if (existingRackIndex !== -1) {
-    // If the rack exists, replace it
-    group.racks[existingRackIndex] = newRack;
-  } else {
-    // If the rack doesn't exist, add it
-    group.racks.push(newRack);
-  }
+  // If the rack doesn't exist, add it
+  group.racks.push(newRack);
 
   var fail = updateADDRackESP(
     Groupid,
@@ -820,13 +884,14 @@ app.post("/new/wrack", (req, res) => {
     return;
   }
 
+  updateLedMacDataExcelFinal(id, "add");
   saveDataToFile(cache);
-
-  res.json({ message: "Rack added or updated successfully", rack: newRack });
+  res.json({ message: "Rack added successfully", rack: newRack });
 });
 
 app.post("/delete/rack", (req, res) => {
   const { Groupid, rackId } = req.body;
+  console.log(Groupid, rackId);
 
   updateCache(); // Ensure cache is up-to-date
 
@@ -841,16 +906,18 @@ app.post("/delete/rack", (req, res) => {
   }
 
   // Remove the rack from the group
-  group.racks.splice(rackIndex, 1);
+  var removedRack = group.racks.splice(rackIndex, 1);
 
-  // Optionally, handle any additional cleanup or checks here
-  // For example, you might want to check if the group should still have a master MAC
-  if (group.racks.length === 0) {
-    group.master_device_id = null; // Clear the master device ID if no racks are left
-  } else if (rackIndex === 0) {
-    // If the first rack was removed, update the master MAC
-    group.master_device_id = group.racks[0].mac;
-  }
+  console.log(removedRack);
+
+  // // Optionally, handle any additional cleanup or checks here
+  // // For example, you might want to check if the group should still have a master MAC
+  // if (group.racks.length === 0) {
+  //   group.master_device_id = null; // Clear the master device ID if no racks are left
+  // } else if (rackIndex === 0) {
+  //   // If the first rack was removed, update the master MAC
+  //   group.master_device_id = group.racks[0].mac;
+  // }
 
   // // Update the device or address mappings if needed
   // const fail = updateDELDRackESP(Groupid, rackId);
@@ -860,6 +927,7 @@ app.post("/delete/rack", (req, res) => {
   //     .json({ error: "Failed to update the device mappings" });
   // }
 
+  updateLedMacDataExcelFinal(removedRack[0].device_id, "delete");
   saveDataToFile(cache);
 
   res.json({ message: "Rack deleted successfully", rackId: rackId });

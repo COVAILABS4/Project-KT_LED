@@ -1,12 +1,7 @@
 [
   {
-    "IP": "123",
-    "ID": "KT-1",
-    "master_id": "qwqw"
-  },
-  {
-    "IP": "123",
-    "ID": "KT-2",
-    "master_id": ""
+    "IP": "192.168.4.1",
+    "ID": "KT-19",
+    "master_id": "WW"
   }
 ]

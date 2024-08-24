@@ -1,6 +1,15 @@
+/* eslint-disable react/prop-types */
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { Form, Button, Card, Container, Row, Col } from "react-bootstrap";
+import {
+  Form,
+  Button,
+  Card,
+  Container,
+  Row,
+  Col,
+  Alert,
+} from "react-bootstrap";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "./Setup.css";
@@ -8,6 +17,9 @@ import "react-tooltip/dist/react-tooltip.css";
 import { Tooltip } from "react-tooltip";
 
 import Select from "react-select";
+
+const ip = window.location.hostname;
+
 const colors = [
   { name: "Red", value: "255,0,0" },
   { name: "Green", value: "0,255,0" },
@@ -28,70 +40,201 @@ const Setup = ({
   bins,
   availableDevices,
   availableStaticDevices,
+  forSetIP,
+  AllStaticDevices,
+  slaveDevices,
 }) => {
+  //For Add Group
   const [newGroupId, setNewGroupId] = useState("");
   const [newGroupDeviceId, setNewGroupDeviceId] = useState("");
+  const [errors, setErrors] = useState({});
+
+  const deviceOptions = forSetIP.map((device) => ({
+    value: device.ID,
+    label: device.ID,
+  }));
+
+  const validateForm = () => {
+    const newErrors = {};
+    if (!newGroupId) newErrors.newGroupId = "Group ID is required.";
+    if (!newGroupDeviceId)
+      newErrors.newGroupDeviceId = "Device ID is required.";
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleAddGroup = () => {
+    if (!validateForm()) return;
+
+    axios
+      .post("http://" + ip + ":5000/new/group", {
+        newGroupid: newGroupId,
+        newGroupDeviceId: newGroupDeviceId.value,
+      })
+      .then((response) => {
+        notify("Group added successfully!", "success");
+        setNewGroupId("");
+        setNewGroupDeviceId("");
+        setErrors({}); // Clear errors upon successful addition
+      })
+      .catch((error) => notify("Failed to add group", "error"));
+  };
+
+  const handleDeleteGroup = async (groupId) => {
+    try {
+      await axios.post("http://" + ip + ":5000/delete/group", { groupId });
+      notify("Group deleted successfully!", "success");
+    } catch (error) {
+      notify("Failed to delete group", "error");
+    }
+  };
+
+  //-------------------------END of GROUP----------------------------------------------//
+
+  //For setup IP
+  const [ipAddress, setIpAddress] = useState("");
+  const [groupIdForSetIp, setGroupIdForSetIp] = useState("");
+  const [errors1, setErrors1] = useState({});
+
+  const options = AllStaticDevices.map((device) => ({
+    value: device.master_id,
+    label: device.master_id,
+  }));
+
+  const handleSelectChange = (selectedOption) => {
+    setGroupIdForSetIp(selectedOption ? selectedOption.value : "");
+    if (selectedOption) {
+      setErrors((prevErrors) => ({ ...prevErrors, groupIdForSetIp: "" }));
+    }
+  };
+
+  const validateForm1 = () => {
+    const newErrors = {};
+    if (!groupIdForSetIp) newErrors.groupIdForSetIp = "Group ID is required.";
+    if (!ipAddress) newErrors.ipAddress = "IP Address is required.";
+    setErrors1(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleGetIpAddress = () => {
+    if (!groupIdForSetIp) {
+      setErrors({ groupIdForSetIp: "Please select a Group ID." });
+      return;
+    }
+
+    axios
+      .get("http://" + ip + ":5000/address/getIP/" + groupIdForSetIp)
+      .then((response) => {
+        setIpAddress(response.data.ip || "");
+        setErrors({});
+        notify("IP address fetched successfully!", "success");
+      })
+      .catch((error) => notify("Failed to fetch IP address", "error"));
+  };
+
+  const handleSetIpAddress = () => {
+    if (!validateForm1()) return;
+
+    axios
+      .post("http://" + ip + ":5000/address/setIP", {
+        ip: ipAddress,
+        group_id: groupIdForSetIp,
+      })
+      .then((response) => {
+        notify("IP address set successfully!", "success");
+        setIpAddress("");
+        setGroupIdForSetIp("");
+      })
+      .catch((error) => notify("Failed to set IP address", "error"));
+  };
+
+  //-------------------------END  of SETUP IP-----------------------------------------//
+  //For Add Rack
   const [groupIdForWrack, setGroupIdForWrack] = useState("");
   const [newWrackId, setNewWrackId] = useState("");
-  const [macAddress, setMacAddress] = useState("");
+  const [deviceId4rack, setDeviceId4rack] = useState("");
+
+  const deviceOptions1 = slaveDevices.map((device) => ({
+    value: device.ID,
+    label: device.ID,
+  }));
+
+  const groupOptions = groups.map((group) => ({
+    value: group.group_id,
+    label: group.group_id,
+  }));
+
+  useEffect(() => {
+    if (groupIdForWrack) {
+      const filteredRacks = racks.filter(
+        (rack) => rack.group_id === groupIdForWrack
+      );
+
+      if (filteredRacks.length === 0 || filteredRacks[0].racks.length === 0) {
+        let local_masterid = "";
+
+        AllStaticDevices.forEach((element) => {
+          if (element.master_id === groupIdForWrack) {
+            local_masterid = element.ID;
+          }
+        });
+
+        // Set mac address once, when the group has no racks
+        setDeviceId4rack(local_masterid);
+      }
+    }
+  }, [groupIdForWrack, racks, AllStaticDevices]);
+
+  const handleAddWrack = () => {
+    if (!groupIdForWrack || !newWrackId || !deviceId4rack) {
+      notify("Please fill in all fields before adding a rack.", "warning");
+      return;
+    }
+
+    axios
+      .post("http://" + ip + ":5000/new/wrack", {
+        Groupid: groupIdForWrack,
+        newWrackid: newWrackId,
+        id: deviceId4rack,
+      })
+      .then((response) => {
+        notify("Wrack added successfully!", "success");
+        // Reset form fields after successful addition
+        setNewWrackId("");
+        setDeviceId4rack("");
+      })
+      .catch((error) => {
+        console.error("Error adding wrack:", error);
+        notify("Failed to add wrack", "error");
+      });
+  };
+
+  const handleDeleteRack = (rack) => {
+    axios
+      .post("http://" + ip + ":5000/delete/rack", {
+        Groupid: groupIdForWrack,
+        rackId: rack.rack_id,
+      })
+      .then((response) => {
+        notify("Rack deleted successfully!", "success");
+        // Refresh or re-fetch racks here if needed
+      })
+      .catch((error) => {
+        console.error("Error deleting rack:", error);
+        notify("Failed to delete rack", "error");
+      });
+  };
+
+  //-------------------------END  of Add Rack-----------------------------------------//
   const [groupIdForSchedule, setGroupIdForSchedule] = useState("");
   const [wrackIdForSchedule, setWrackIdForSchedule] = useState("");
   const [binIdForSchedule, setBinIdForSchedule] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
-  const [ipAddress, setIpAddress] = useState("");
-  const [device_id, setDeviceID] = useState("");
-  const [newIP, setNewIP] = useState("");
 
-  const deviceOptions = availableStaticDevices.map((device) => ({
-    value: device.ID,
-    label: device.ID,
-  }));
+  // const [newIP, setNewIP] = useState("");
 
-  const deviceOptions1 = availableDevices.map((device) => ({
-    value: device.ID,
-    label: device.ID,
-  }));
-
-  const ip = window.location.hostname;
-  // console.log(availableDevices);
-
-  const handleGetIpAddress = () => {
-    axios
-      .get("http://" + ip + ":5000/address/getIP/" + device_id)
-      .then((response) => {
-        // console.log(response.data.ip);
-        setIpAddress(response.data.ip || "");
-      })
-      .catch((error) => notify("Failed to fetch IP address", "error"));
-  };
-  const handleAddIpAddress = () => {
-    axios
-      .post("http://" + ip + ":5000/address/addIP", {
-        ip: ipAddress,
-        device_id: device_id,
-      })
-      .then((response) => {
-        setNewIP(ipAddress);
-        // setIpAddress("");
-        notify("IP address set successfully!", "success");
-      })
-      .catch((error) => notify("Failed to set IP address", "error"));
-  };
-
-  const handleSetIpAddress = () => {
-    axios
-      .post("http://" + ip + ":5000/address/setIP", {
-        ip: ipAddress,
-        device_id: device_id,
-      })
-      .then((response) => {
-        setNewIP(ipAddress);
-        // setIpAddress("");
-        notify("IP address set successfully!", "success");
-      })
-      .catch((error) => notify("Failed to set IP address", "error"));
-  };
+  // console.log(availableStaticDevices);
 
   const notify = (message, type) => {
     toast[type](message, {
@@ -105,35 +248,6 @@ const Setup = ({
     });
 
     fetchData();
-  };
-
-  const handleAddGroup = () => {
-    axios
-      .post("http://" + ip + ":5000/new/group", {
-        newGroupid: newGroupId,
-        newGroupDeviceId: newGroupDeviceId.value,
-      })
-      .then((response) => {
-        notify("Group added successfully!", "success");
-        // setNewGroupId("");
-      })
-      .catch((error) => notify("Failed to add group", "error"));
-  };
-
-  const handleAddWrack = () => {
-    axios
-      .post("http://" + ip + ":5000/new/wrack", {
-        Groupid: groupIdForWrack,
-        newWrackid: newWrackId,
-        id: macAddress,
-      })
-      .then((response) => {
-        notify("Wrack added successfully!", "success");
-        // setGroupIdForWrack("");
-        // setNewWrackId("");
-        // setMacAddress("");
-      })
-      .catch((error) => notify("Failed to add wrack", "error"));
   };
 
   const handleAddSchedule = () => {
@@ -164,33 +278,6 @@ const Setup = ({
     setSelectedColor(colorValue);
   };
 
-  const handleDeleteRack = (rack) => {
-    axios
-      .post("http://" + ip + ":5000/delete/rack", {
-        Groupid: groupIdForWrack,
-        rackId: rack,
-      })
-      .then((response) => {
-        notify("Rack deleted successfully!", "success");
-        // Refresh or re-fetch racks here if needed
-      })
-      .catch((error) => notify("Failed to delete rack", "error"));
-  };
-
-  const handleDeleteGroup = async (groupId) => {
-    try {
-      await axios.post("http://" + ip + ":5000/delete/group", { groupId });
-      notify("Group deleted successfully!", "success");
-    } catch (error) {
-      notify("Failed to delete group", "error");
-    }
-  };
-
-  const groupOptions = groups.map((group) => ({
-    value: group,
-    label: group,
-  }));
-
   const handleDeleteSchedule = (
     groupIdForSchedule,
     wrackIdForSchedule,
@@ -213,118 +300,11 @@ const Setup = ({
       .catch((error) => notify("Failed to delete Schedule", "error"));
   };
 
-  const handleSelectChange = (selectedOption) => {
-    setDeviceID(selectedOption ? selectedOption.value : "");
-  };
-
-  const [isAddingNew, setIsAddingNew] = useState(false);
-
-  const dropdownData = !isAddingNew ? availableStaticDevices : availableDevices;
-
-  const handleToggle = () => {
-    setIsAddingNew(!isAddingNew);
-  };
-
-  const options = dropdownData.map((device) => ({
-    value: device.ID,
-    label: device.ID,
-  }));
   return (
     <Container className="setup">
       <h1>Setup</h1>
       <ToastContainer />
       <Row>
-        <Col md={4}>
-          <Card className="setup-card">
-            <Card.Body>
-              <Card.Title>Setup IP Address</Card.Title>
-              <Form.Check
-                type="switch"
-                id="custom-switch"
-                label={
-                  isAddingNew
-                    ? "Adding New Device"
-                    : "Get or Set Existing Device"
-                }
-                checked={isAddingNew}
-                onChange={handleToggle}
-                style={{ margin: "15px 0" }}
-              />
-              <Form>
-                <Form.Group controlId="deviceSelect">
-                  <Form.Label>Device ID</Form.Label>
-                  <Select
-                    value={options.find((option) => option.value === device_id)}
-                    onChange={handleSelectChange}
-                    options={options}
-                    isSearchable
-                    isClearable
-                    maxMenuHeight={150}
-                    isMulti={false}
-                    placeholder="Select Device"
-                  />
-
-                  <Form.Label>IP Address</Form.Label>
-                  <Form.Control
-                    type="text"
-                    value={ipAddress || ""}
-                    placeholder="Enter IP Address"
-                    onChange={(e) => setIpAddress(e.target.value)}
-                  />
-                </Form.Group>
-
-                {!isAddingNew ? (
-                  <div>
-                    <Button
-                      variant="primary"
-                      onClick={handleGetIpAddress}
-                      style={{
-                        margin: "5px",
-                        padding: "10px 20px",
-                        backgroundColor: "#007bff",
-                        borderColor: "#007bff",
-                        borderRadius: "5px",
-                        fontSize: "16px",
-                      }}
-                    >
-                      Get IP Address
-                    </Button>
-                    <Button
-                      variant="primary"
-                      onClick={handleSetIpAddress}
-                      style={{
-                        margin: "5px",
-                        padding: "10px 20px",
-                        backgroundColor: "#007bff",
-                        borderColor: "#007bff",
-                        borderRadius: "5px",
-                        fontSize: "16px",
-                      }}
-                    >
-                      Set IP Address
-                    </Button>
-                  </div>
-                ) : (
-                  <Button
-                    variant="primary"
-                    onClick={handleAddIpAddress}
-                    style={{
-                      margin: "5px",
-                      padding: "10px 20px",
-                      backgroundColor: "#007bff",
-                      borderColor: "#007bff",
-                      borderRadius: "5px",
-                      fontSize: "16px",
-                    }}
-                  >
-                    Add
-                  </Button>
-                )}
-              </Form>
-            </Card.Body>
-          </Card>
-        </Col>
-
         <Col md={4}>
           <Card className="setup-card">
             <Card.Body>
@@ -337,7 +317,13 @@ const Setup = ({
                     placeholder="Enter Group ID"
                     value={newGroupId || ""}
                     onChange={(e) => setNewGroupId(e.target.value)}
+                    isInvalid={!!errors.newGroupId}
                   />
+                  {errors.newGroupId && (
+                    <Form.Control.Feedback type="invalid">
+                      {errors.newGroupId}
+                    </Form.Control.Feedback>
+                  )}
                 </Form.Group>
                 <Form.Group controlId="newGroupDeviceId">
                   <Form.Label>New Group Device ID</Form.Label>
@@ -349,70 +335,119 @@ const Setup = ({
                     isClearable
                     placeholder="Select Device ID"
                     maxMenuHeight={160}
+                    noOptionsMessage={() => "No Devices"}
                   />
+                  {errors.newGroupDeviceId && (
+                    <Alert variant="danger" className="mt-2">
+                      {errors.newGroupDeviceId}
+                    </Alert>
+                  )}
                 </Form.Group>
                 <Button
-                  style={{
-                    width: "100%",
-                    marginTop: "15px",
-                  }}
+                  className="w-100 mt-3"
                   variant="primary"
                   onClick={handleAddGroup}
+                  disabled={!newGroupId || !newGroupDeviceId}
                 >
                   Add
                 </Button>
               </Form>
 
               {/* Division for Existing Groups */}
-              {groups.length != 0 && (
-                <Card.Title style={{ marginTop: "20px" }}>
-                  Existing Groups
-                </Card.Title>
+              {groups.length !== 0 && (
+                <Card.Title className="mt-4">Existing Groups</Card.Title>
               )}
-              {groups && (
+              {groups.length > 0 && (
                 <div
-                  className="existing-groups"
-                  style={{
-                    marginTop: "20px",
-                    maxHeight: "150px",
-                    overflowY: "auto",
-                  }}
+                  className="existing-groups mt-3"
+                  style={{ maxHeight: "110px", overflowY: "auto" }}
                 >
                   {groups.map((group, index) => (
-                    <div key={index} style={{ marginBottom: "10px" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          padding: "5px",
-                          backgroundColor: "transparent",
-                          borderRadius: "5px",
-                          border: "none",
-                        }}
+                    <div
+                      key={index}
+                      className="d-flex justify-content-between align-items-center mb-2"
+                    >
+                      <p className="mb-0">
+                        {index + 1}: {group.group_id} ({group.device_id})
+                      </p>
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={() => handleDeleteGroup(group.group_id)}
+                        className="ml-2"
                       >
-                        <p
-                          style={{
-                            margin: 0,
-                            fontWeight: "normal",
-                            color: "#343a40",
-                          }}
-                        >
-                          {index + 1} {" : " + group}
-                        </p>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => handleDeleteGroup(group)}
-                          style={{ borderRadius: "5px" }}
-                        >
-                          Delete
-                        </Button>
-                      </div>
+                        Delete
+                      </Button>
                     </div>
                   ))}
                 </div>
               )}
+            </Card.Body>
+          </Card>
+        </Col>
+
+        <Col md={4}>
+          <Card className="setup-card">
+            <Card.Body>
+              <Card.Title>Setup IP Address</Card.Title>
+
+              <Form>
+                <Form.Group controlId="groupSelect">
+                  <Form.Label>Group ID</Form.Label>
+                  <Select
+                    value={options.find(
+                      (option) => option.value === groupIdForSetIp
+                    )}
+                    onChange={handleSelectChange}
+                    options={options}
+                    isSearchable
+                    isClearable
+                    maxMenuHeight={150}
+                    isMulti={false}
+                    placeholder="Select Group"
+                    noOptionsMessage={() => "No Devices"}
+                  />
+                  {errors1.groupIdForSetIp && (
+                    <Alert variant="danger" className="mt-2">
+                      {errors1.groupIdForSetIp}
+                    </Alert>
+                  )}
+                </Form.Group>
+
+                <Form.Group controlId="ipAddress">
+                  <Form.Label>IP Address</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={ipAddress}
+                    placeholder="Enter IP Address"
+                    onChange={(e) => setIpAddress(e.target.value)}
+                    isInvalid={!!errors1.ipAddress}
+                  />
+                  {errors1.ipAddress && (
+                    <Form.Control.Feedback type="invalid">
+                      {errors1.ipAddress}
+                    </Form.Control.Feedback>
+                  )}
+                </Form.Group>
+
+                <div className="d-flex justify-content-around">
+                  <Button
+                    variant="primary"
+                    onClick={handleGetIpAddress}
+                    className="mr-2"
+                    disabled={!groupIdForSetIp}
+                  >
+                    Get IP Address
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleSetIpAddress}
+                    disabled={!groupIdForSetIp || !ipAddress}
+                  >
+                    Set IP Address
+                  </Button>
+                </div>
+              </Form>
             </Card.Body>
           </Card>
         </Col>
@@ -439,11 +474,14 @@ const Setup = ({
                       (option) => option.value === groupIdForWrack
                     )}
                     onChange={(selectedOption) =>
-                      setGroupIdForWrack(selectedOption.value)
+                      setGroupIdForWrack(
+                        selectedOption ? selectedOption.value : ""
+                      )
                     }
                     isSearchable={true}
                     isClearable
                     placeholder="Select Group"
+                    noOptionsMessage={() => "No Groups"}
                     maxMenuHeight={160}
                   />
                 </Form.Group>
@@ -505,8 +543,8 @@ const Setup = ({
                                     rackIndex === 0 ? "#007bff" : "#343a40",
                                 }}
                               >
-                                {rackIndex + 1} : {" " + rack}
-                                {"  "}
+                                {rackIndex + 1} : {" " + rack.rack_id}(
+                                {rack.device_id}){"  "}
                                 {rackIndex === 0 && "(master)"}
                               </p>
                               {rackIndex !== 0 && (
@@ -534,44 +572,74 @@ const Setup = ({
                   <Form.Label>New Rack ID</Form.Label>
                   <Form.Control
                     type="text"
-                    value={newWrackId || ""}
+                    value={newWrackId}
                     onChange={(e) => setNewWrackId(e.target.value)}
+                    placeholder="Enter new rack ID"
                   />
                 </Form.Group>
 
                 {/* Dropdown for selecting available Device ID using react-select */}
                 <Form.Group
-                  controlId="macAddress"
+                  controlId="deviceId4rack"
                   style={{ marginTop: "10px" }}
                 >
-                  <Form.Label>Device ID</Form.Label>
-                  <Select
-                    options={(() => {
+                  {groupIdForWrack && <Form.Label>Device ID</Form.Label>}
+
+                  {groupIdForWrack &&
+                    (() => {
                       const filteredRacks = racks.filter(
                         (rack) => rack.group_id === groupIdForWrack
                       );
 
-                      // Check if the filtered result contains any racks
                       if (
                         filteredRacks.length > 0 &&
                         filteredRacks[0].racks.length > 0
                       ) {
-                        return deviceOptions1;
+                        return (
+                          <Select
+                            options={deviceOptions1}
+                            value={deviceOptions1.find(
+                              (option) => option.value === deviceId4rack
+                            )}
+                            onChange={(selectedOption) =>
+                              setDeviceId4rack(
+                                selectedOption ? selectedOption.value : ""
+                              )
+                            }
+                            isSearchable={true}
+                            isClearable
+                            placeholder="Select Device ID"
+                            maxMenuHeight={160}
+                            noOptionsMessage={() => "No Devices"}
+                          />
+                        );
                       } else {
-                        return availableStaticDevices;
+                        let local_masterid = "";
+
+                        AllStaticDevices.forEach((element) => {
+                          if (element.master_id === groupIdForWrack)
+                            local_masterid = element.ID;
+                        });
+
+                        return (
+                          <Select
+                            options={[
+                              {
+                                label: local_masterid,
+                                value: local_masterid,
+                              },
+                            ]}
+                            value={{
+                              label: local_masterid,
+                              value: local_masterid,
+                            }}
+                            isDisabled={true}
+                            placeholder="Select Device ID"
+                            maxMenuHeight={160}
+                          />
+                        );
                       }
                     })()}
-                    value={deviceOptions1.find(
-                      (option) => option.value === macAddress
-                    )}
-                    onChange={(selectedOption) =>
-                      setMacAddress(selectedOption.value)
-                    }
-                    isSearchable={true}
-                    isClearable
-                    placeholder="Select Device ID"
-                    maxMenuHeight={160}
-                  />
                 </Form.Group>
 
                 {/* Button to Add Rack */}
@@ -583,6 +651,7 @@ const Setup = ({
                     width: "100%",
                     borderRadius: "5px",
                   }}
+                  disabled={!newWrackId || !deviceId4rack}
                 >
                   Add Rack
                 </Button>
@@ -614,8 +683,8 @@ const Setup = ({
                   >
                     <option value="">Select Group</option>
                     {groups.map((group, index) => (
-                      <option key={index} value={group}>
-                        {group}
+                      <option key={index} value={group.group_id}>
+                        {group.group_id}
                       </option>
                     ))}
                   </Form.Control>
@@ -633,9 +702,12 @@ const Setup = ({
                     {racks
                       .filter((rack) => rack.group_id === groupIdForSchedule)
                       .map((rack, rackIndex) => {
-                        return rack.racks.map((id, idIndex) => (
-                          <option key={`${rackIndex}-${idIndex}`} value={id}>
-                            {id}
+                        return rack.racks.map((rack, idIndex) => (
+                          <option
+                            key={`${rackIndex}-${idIndex}`}
+                            value={rack.rack_id}
+                          >
+                            {rack.rack_id}
                           </option>
                         ));
                       })}
