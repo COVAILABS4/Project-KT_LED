@@ -76,6 +76,7 @@ const Dashboard = ({ data, fetchData }) => {
           toggleSchedule={toggleSchedule}
           fetchData={fetchData}
           setSelectedBin={setSelectedBin}
+          handleBinClick={handleBinClick}
         />
       )}
       <ToastContainer className="toast-container" />

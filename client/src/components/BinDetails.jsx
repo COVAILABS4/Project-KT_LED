@@ -3,6 +3,7 @@ import { Table, Button } from "react-bootstrap";
 import ColorPickerModal from "./ColorPickerModal.jsx";
 import "./Dashboard.css";
 import axios from "axios";
+
 const BinDetails = ({
   selectedBin,
   setShowBinDetails,
@@ -10,6 +11,7 @@ const BinDetails = ({
   toggleSchedule,
   fetchData,
   setSelectedBin,
+  handleBinClick,
 }) => {
   const ip = window.location.hostname;
 
@@ -24,6 +26,7 @@ const BinDetails = ({
         }
       );
       setSelectedBin(response.data);
+      handleBinClick(group_id, rack_id, bin_id);
       fetchData();
     } catch (error) {
       console.error("Error toggling enabled:", error);
@@ -40,12 +43,19 @@ const BinDetails = ({
           bin_id,
         }
       );
+
+      setShowBinDetails(false);
       setSelectedBin(response.data);
+      // setShowBinDetails(true);
+
+      // handleBinClick(group_id, rack_id, bin_id);
+
       fetchData();
     } catch (error) {
       console.error("Error toggling clicked:", error);
     }
   };
+
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [newColor, setNewColor] = useState(selectedBin.color);
 
@@ -56,6 +66,12 @@ const BinDetails = ({
       selectedBin.bin_id,
       newColor
     );
+    handleBinClick(
+      selectedBin.group_id,
+      selectedBin.rack_id,
+      selectedBin.bin_id
+    );
+
     setShowColorPicker(false);
   };
 
@@ -65,7 +81,7 @@ const BinDetails = ({
         Close
       </Button>
       <h3>Bin Details</h3>
-      <p>Group ID: {selectedBin.group_id}</p>
+      <p>Stack Name: {selectedBin.group_id}</p>
       <p>Rack ID: {selectedBin.rack_id}</p>
       <p>Bin ID: {selectedBin.bin_id}</p>
       <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
@@ -96,7 +112,7 @@ const BinDetails = ({
         </Button>
       </div>
       <div>
-        <p>Clicked: {selectedBin.clicked.toString()}</p>
+        <p>Current State : {selectedBin.clicked.toString()}</p>
         <Button
           onClick={() =>
             toggleClicked(
@@ -105,8 +121,9 @@ const BinDetails = ({
               selectedBin.bin_id
             )
           }
+          disabled={selectedBin.clicked} // Disable button when clicked is false
         >
-          Toggle Clicked
+          Turn Off
         </Button>
       </div>
       <h4>Schedules</h4>

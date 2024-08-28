@@ -15,7 +15,11 @@ e = None
 data = []
 wlan_mac = None;
 
-server_ip = "192.168.231.83"
+server_ip = "192.168.65.83"
+
+KIT_NO = 4
+
+SERVER_NO = 83
 
 # Define I2C pins for SDA and SCL
 sda_pin = machine.Pin(21)
@@ -32,7 +36,18 @@ isAvail = False
 sta = network.WLAN(network.STA_IF)
 sta.active(True)
 
+
+buzzer_pin = 32
+relay_pin = 33
+buzzer = machine.Pin(buzzer_pin, machine.Pin.OUT)
+relay = machine.Pin(relay_pin, machine.Pin.OUT)
+
+# Shared state for buzzer and relay management
+active_bins = [] 
+
 def connect_to_wifi(ssid, password):
+    """Connect to the Wi-Fi network and handle IP extraction and modification."""
+    global server_ip;
     if not sta.isconnected():
         print('Connecting to network', end="")
         sta.connect(ssid, password)
@@ -48,9 +63,31 @@ def connect_to_wifi(ssid, password):
             if time.time() - start_time > 10:
                 print("\nFailed to connect within 10 seconds.")
                 check_and_reset()
+                return
+        
         print()
+    
     print('Network configuration:', sta.ifconfig())
+    
+    # Extract and modify IP address
+    ip_info = sta.ifconfig()
+    ip_address = ip_info[0]
+    
+    # Split IP address into parts
+    ip_parts = ip_address.split('.')
+    
+    # Construct new IP address
+    if len(ip_parts) == 4:
+        new_ip_address = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.{KIT_NO}"
+        print(f"New IP address to be set: {new_ip_address}")
+        
 
+        server_ip = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.{SERVER_NO}"
+        # Set new IP address (optional)
+        sta.ifconfig((new_ip_address, ip_info[1], ip_info[2], ip_info[3]))
+        print('Updated network configuration:', sta.ifconfig())
+    else:
+        print("Unexpected IP address format.")
 
 def disconnect_wifi():
     global sta
@@ -62,6 +99,19 @@ def get_mac():
     wlan_mac = sta.config('mac')
     
     return wlan_mac
+
+def add_to_active_bins(rack_id, bin_index, color):
+    """ Add bin rack_id, index, and color to the active bins list if not already present. """
+    global active_bins
+    if (rack_id, bin_index) not in [(b[0], b[1]) for b in active_bins]:  # Check if (rack_id, bin_index) is not already in the list
+        active_bins.append((rack_id, bin_index, color))
+        print(f"Added bin {bin_index} in rack {rack_id} with color {color} to active bins.")
+
+def remove_from_active_bins(rack_id, bin_index):
+    """ Remove bin rack_id and index from the active bins list. """
+    global active_bins
+    active_bins = [b for b in active_bins if not (b[0] == rack_id and b[1] == bin_index)]
+    print(f"Removed bin {bin_index} in rack {rack_id} from active bins.")
 
 
 class Bin:
@@ -82,7 +132,6 @@ class Bin:
         self.np = NeoPixel(machine.Pin(self.led_pin), self.num_leds)
 
         # Set up the button interrupt
-        
         self.button.irq(trigger=machine.Pin.IRQ_FALLING, handler=self.handle_button_press)
         print(f"Button configured on pin {self.button_pin}")
         
@@ -112,13 +161,18 @@ class Bin:
         if time.ticks_diff(current_time, self.last_pressed_time) > 200:  # Debounce delay
             print(f"Button pressed for bin {self.button_pin}")
             self.last_pressed_time = current_time
-            self.clicked = True
+            self.clicked = True # Toggle clicked state
+            
             if not self.clicked:
                 self.change_led_color()
+                add_to_active_bins(self.rack_id, self.index, self.color)  # Add to active bins
             else:
                 self.turn_off_leds()
+                remove_from_active_bins(self.rack_id, self.index)  # Remove from active bins
+            
             # Send button press status to master
             self.send_message(self.index, 'click-change')
+            check_and_update_buzzer_relay()  # Check buzzer and relay status after button press
 
     def send_message(self, bin_index, operation):
         msg = ujson.dumps({
@@ -128,6 +182,7 @@ class Bin:
         })
         update_data_json_from_message(msg)
         print(f"Sent message to : {msg}")
+
 
 def load_json_data(file_path):
     try:
@@ -154,64 +209,19 @@ def load_json_rack(data,mac):
 # -- BINS
 bins = []
 
+
+
 def config_all(config):
     if not config:
         return
     for i, bin_config in enumerate(config['bins']):
         bins.append(Bin(bin_config, i, config['rack_id']))
         print(f"Bin {i + 1} Configured")
-        #time.sleep(0.5)  # Add delay to ensure hardware is properly configured
-#     for i in bins:
-#         i.turn_off_leds();
-#     print("All bins initialized and ready.")
 
-def add_peers_from_json(data):
-    global e
-    for group in data:
-        for rack in group['racks']:
-            mac = bytes(rack['mac'])
-            
-            try:
-                e.add_peer(mac)
-            except Exception:
-                print("Already Exist")
-            
-            print(f"Added peer: {mac}")
+    print("All bins initialized and ready.")
+
 
 receive_thread_soc = None
-
-
-
-def handle_post(request, cl):
-    sev_data = None
-    try:
-        headers = {}
-        while True:
-            line = request.readline().decode('utf-8').strip()
-            if not line:
-                break
-            key, value = line.split(': ', 1)
-            headers[key] = value
-
-        content_length = int(headers.get('Content-Length', 0))
-        post_data = request.read(content_length)
-        print('POST Data:', post_data)
-        sev_data = json.loads(post_data)
-        response = {'status': 'success'}
-        cl.send('HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n')
-        cl.send(json.dumps(response))
-        cl.close()
-        
-    except Exception as err:
-        print(f"Error handling POST request: {err}")
-        check_and_reset()
-        response = {'status': 'error', 'message': str(err)}
-        cl.send('HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n')
-        cl.send(json.dumps(response))
-    
-    if sev_data is not None:
-        handle_operation(sev_data)
-
 
 def start_server():
     s = None
@@ -489,6 +499,36 @@ def update_local_json_schedule_enabled(group_id, rack_id, bin_id,scheduled_index
         print(f"Error updating local JSON: {err}")
     return None, None
 
+def update_local_json_remove_schedule(group_id, rack_id, bin_id, scheduled_index):
+    try:
+        # Load the JSON data from the file
+        with open('data.json', 'r') as f:
+            data = json.load(f)
+
+        for group in data:
+            if group['Group_id'] == group_id:
+                for rack in group['racks']:
+                    if rack['rack_id'] == rack_id:
+                        for bin in rack['bins']:
+                            if bin['bin_id'] == bin_id:
+                                # Remove the schedule at the specified index
+                                if 0 <= scheduled_index < len(bin['schedules']):
+                                    del bin['schedules'][scheduled_index]
+                                    print(f"Schedule {scheduled_index} removed from bin {bin_id}.")
+                                else:
+                                    print(f"Invalid schedule index: {scheduled_index}")
+                                    return False
+
+        # Write the updated data back to the JSON file
+        with open('data.json', 'w') as f:
+            json.dump(data, f)
+
+        print("Local JSON updated successfully after removing the schedule.")
+        return True
+    except Exception as err:
+        print(f"Error removing schedule from local JSON: {err}")
+    return False
+
 
 def update_local_json_add_rack(group_id, new_rack_id, mac):
     global wlan_mac
@@ -544,10 +584,33 @@ def update_local_json_add_rack(group_id, new_rack_id, mac):
         print(f"Error updating local JSON: {err}")
     return None, None
 
+def update_local_json_remove_rack(group_id, rack_id):
+    try:
+        # Load the JSON data from the file
+        with open('data.json', 'r') as f:
+            data = json.load(f)
+
+        for group in data:
+            if group['Group_id'] == group_id:
+                # Find and remove the rack with the given rack_id
+                group['racks'] = [rack for rack in group['racks'] if rack['rack_id'] != rack_id]
+
+        # Write the updated data back to the JSON file
+        with open('data.json', 'w') as f:
+            json.dump(data, f)
+
+        print(f"Rack {rack_id} removed successfully from group {group_id}.")
+        return True
+    except Exception as err:
+        print(f"Error removing rack from local JSON: {err}")
+    return False
+
+
 # Function to handle different operations
 def handle_operation(rec_data):
     
-    global wlan_mac;
+    global wlan_mac,current_group_id,current_rack,group_index;
+    # global ;
     print(wlan_mac)
     print("COMMING")
     print(rec_data)
@@ -564,7 +627,22 @@ def handle_operation(rec_data):
             ]
         with open('data.json', 'w') as f:
             json.dump(new_data, f)
-        loaders()
+        current_group_id = new_group_id
+        current_rack = ""
+        group_index = 0
+    
+    elif operation == 'remove-master':
+        new_data = [
+                {
+                "Group_id": "",
+                    "racks": []      
+                }
+            ]
+        with open('data.json', 'w') as f:
+            json.dump(new_data, f)
+        current_group_id = ""
+        current_rack = ""
+        group_index = 0
         
         
     elif operation == 'push':
@@ -617,6 +695,7 @@ def handle_operation(rec_data):
                 }
                 send_message(bytes(mac_str), json.dumps(msg))
         else:
+            # current_rack = 
             load_json_rack(data,wlan_mac)
             
     elif operation == 'click-change':
@@ -624,6 +703,8 @@ def handle_operation(rec_data):
         rack_id = rec_data['rack_id']
         bin_id = rec_data['bin_id']
         mac, bin_idx = update_local_json_click(group_id, rack_id, bin_id)
+        remove_from_active_bins(rack_id, bin_idx)
+        check_and_update_buzzer_relay()
         if mac:
             msg = {
                 "operation": "click-change",
@@ -657,6 +738,36 @@ def handle_operation(rec_data):
                     bins[bin_idx].change_led_color()
                 else:
                     bins[bin_idx].turn_off_leds()
+    elif operation == 'remove-rack':
+        group_id = rec_data['group_id']
+        rack_id = rec_data['rack_id']
+        if update_local_json_remove_rack(group_id, rack_id):
+            msg = {
+                "operation": "remove-rack",
+                "group_id": group_id,
+                "rack_id": rack_id
+            }
+            send_message(wlan_mac, json.dumps(msg))
+        else:
+            print(f"Failed to remove rack {rack_id} from group {group_id}.")
+
+    elif operation == 'remove-schedule':
+        group_id = rec_data['group_id']
+        rack_id = rec_data['rack_id']
+        bin_id = rec_data['bin_id']
+        scheduled_index = rec_data['scheduled_index']
+        if update_local_json_remove_schedule(group_id, rack_id, bin_id, scheduled_index):
+            msg = {
+                "operation": "remove-schedule",
+                "group_id": group_id,
+                "rack_id": rack_id,
+                "bin_id": bin_id,
+                "scheduled_index": scheduled_index
+            }
+            send_message(wlan_mac, json.dumps(msg))
+        else:
+            print(f"Failed to remove schedule index {scheduled_index} from bin {bin_id}.")
+
     
     elif operation == 'schedule-change':
         group_id = rec_data['group_id']
@@ -750,12 +861,16 @@ def update_data_json_from_message(msg):
                             rack['bins'][bin_idx]['clicked'] = True
                             curr_state = rack['bins'][bin_idx]['clicked']
                             updated = True
-                            group_id = group.get('Group_id')
+                            group_id = group['Group_id']
                         else:
                             print(f"Error: Bin index {bin_idx} out of range")
                         break
-                if updated:
-                    break
+                
+                remove_from_active_bins(rack_id,bin_idx)
+
+                print(group_id,"---",rack_id,"---",bin_idx)
+                # if updated:
+                #     break
                 print("Com6")
                 if group_id == current_group_id and rack_id == current_rack['rack_id']:
                     bins[bin_idx].clicked = curr_state
@@ -791,38 +906,38 @@ def update_data_json_from_message(msg):
 
         # Add notification to queue
         notification_queue.append({
-            'group_id': group_id,
+            'group_id': current_group_id,
             'rack_id': rack_id,
             'bin_idx': bin_idx,
             'operation': operation,
             'color' : color_arr
         })
-        if isAvail:
-            process_notification_queue()
+        # if isAvail:
+            # process_notification_queue()
     except Exception as err:
         print(f"Error updating JSON from message: {err}")
 
 
 def process_notification_queue():
-    
+    global server_ip,notification_queue;
     response = None
     while notification_queue:
         notification = notification_queue.pop(0)
         print(notification)
         operation = notification.get('operation')
         print("OPER - ",operation)
-        if operation=="change-click":
-            api_url = "http://"+server_ip+":5000/click/update"
-        elif  operation=="change-color":
-            api_url = "http://"+server_ip+":5000/color/update"
+        api_url = "http://"+server_ip+":5000/click/update"
+
         try:
+            print("Start")
             response = requests.post(api_url, json=notification)
+            print("Start2")
             if response.status_code == 200:
                 print("Server notified successfully")
             else:
                 print(f"Error notifying server: {response.status_code} - {response.text}")
         except Exception as err:
-            print(f"Exception occurred while notifying server: {e}")
+            print(f"Exception occurred while notifying server: {err}")
         finally:
             if response:
                 response.close()
@@ -940,7 +1055,10 @@ def notify_slave(messing):
         except Exception:
             print("Already")
         print(rc_mac,messing)
-        e.send(rc_mac,messing)
+        try:
+            e.send(rc_mac,messing)
+        except Exception:
+            print("Arises")
         time.sleep(4)
         print("Notified")
 
@@ -1041,38 +1159,57 @@ def get_data():
     with open("data.json", 'r') as f:
         data= json.load(f)
     
-    return data[0]['racks'][0];
+    return data;
 
+
+def check_and_update_buzzer_relay():
+    """ Check the state of all bins and control buzzer and relay accordingly. """
+    global active_bins, buzzer, relay
+
+    print(active_bins)
+
+
+    if active_bins:
+        buzzer.on()
+        relay.on()
+        print("Buzzer and Relay turned ON")
+    else:
+        buzzer.off()
+        relay.off()
+        print("Buzzer and Relay turned OFF")
 
 def schedule_checker():
     print("Called")
-    global bins, rtc , data
+    global data, rtc, bins,current_rack
     while True:
-        config = get_data()
-        if not config:
+        data = get_data()
+        if not data:
             return 
         current_time = rtc.get_time()
 
-        print(current_time)
         current_hour = str(current_time[3]) # Ensure hour and minute are two digits
         current_minute = str(current_time[4])
-
-        current_hour = "0" + current_hour if len(current_hour) == 1   else current_hour;
-        current_minute = "0" + current_minute if len(current_minute) == 1   else current_minute;
+        
+        current_hour = "0" + current_hour if len(current_hour) == 1 else current_hour
+        current_minute = "0" + current_minute if len(current_minute) == 1 else current_minute
     
-        print(current_hour + " : " + current_minute)
+        print(f"Current Time: {current_hour}:{current_minute}")
 
-        for index, bin in enumerate(config['bins']):  # Corrected the variable names
-            for schedule in bin['schedules']:
-                hour, minute = tuple(schedule['time'].split(":"))
-                print(current_hour + " : " + current_minute ,"---",hour, minute )
-                if schedule['enabled'] and hour == current_hour and minute == current_minute:
-                    bins[index].color = tuple(schedule['color'])
-                    bins[index].change_led_color()
-                    bin['clicked'] = False
-        time.sleep(60)
-
-
+        for group in data:  # Iterate through each group in the data
+            for rack in group['racks']:  # Iterate through each rack in the group
+                rack_id = rack['rack_id']
+                for index, bin in enumerate(rack['bins']):  # Iterate through each bin in the rack
+                    for schedule in bin['schedules']:
+                        hour, minute = schedule['time'].split(":")
+                        if schedule['enabled'] and hour == current_hour and minute == current_minute:
+                            if current_rack['rack_id'] == rack_id:
+                                bins[index].color = tuple(schedule['color'])
+                                bins[index].change_led_color()
+                                bin['clicked'] = False
+                            add_to_active_bins(rack_id, index, bins[index].color)  # Store active bins in a global list
+        
+        check_and_update_buzzer_relay()  # Check and update the buzzer and relay status based on active bins
+        time.sleep(60)  # Check every minute
 
 with open("data.json", 'r') as f:
     data= json.load(f)
@@ -1085,14 +1222,6 @@ load_queues_from_backup()
 
 _thread.start_new_thread(schedule_checker, ())
 check_switch_state()
-
-
-        
-
-
-
- 
-
 
 
 

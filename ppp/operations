@@ -1,0 +1,22 @@
+data: {
+      group_id: 'G1',      
+      rack_id: 'R2',       
+      device_id: 'KT-4',   
+      operation: 'remove-rack'
+    }
+
+
+
+    data: {
+      group_id: 'G1',
+      rack_id: 'R1',
+      bin_id: 'R1_03',
+      scheduled_index: 0,
+      operation: 'remove-schedule'
+    }
+
+
+
+
+    data: { group_id: 'G1', operation: 'remove-master' }
+  

@@ -1,0 +1,8 @@
+{
+  "local_ip": "192.168.4.7",
+  "server_ip": "192.168.65.7",
+  "local_ssid": "AP-7",
+  "local_password": "07070707",
+  "server_ssid": "KT_AP",
+  "server_password": "07070707"
+}

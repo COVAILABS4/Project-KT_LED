@@ -72,18 +72,18 @@ const Setup = ({
         newGroupDeviceId: newGroupDeviceId.value,
       })
       .then((response) => {
-        notify("Group added successfully!", "success");
+        notify("Stack added successfully!", "success");
         setNewGroupId("");
         setNewGroupDeviceId("");
         setErrors({}); // Clear errors upon successful addition
       })
-      .catch((error) => notify("Failed to add group", "error"));
+      .catch((error) => notify("Failed to add Stack", "error"));
   };
 
   const handleDeleteGroup = async (groupId) => {
     try {
       await axios.post("http://" + ip + ":5000/delete/group", { groupId });
-      notify("Group deleted successfully!", "success");
+      notify("Stack deleted successfully!", "success");
     } catch (error) {
       notify("Failed to delete group", "error");
     }
@@ -198,14 +198,14 @@ const Setup = ({
         id: deviceId4rack,
       })
       .then((response) => {
-        notify("Wrack added successfully!", "success");
+        notify("rack added successfully!", "success");
         // Reset form fields after successful addition
         setNewWrackId("");
         setDeviceId4rack("");
       })
       .catch((error) => {
-        console.error("Error adding wrack:", error);
-        notify("Failed to add wrack", "error");
+        console.error("Error adding rack:", error);
+        notify("Failed to add rack", "error");
       });
   };
 
@@ -232,10 +232,6 @@ const Setup = ({
   const [scheduleTime, setScheduleTime] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
 
-  // const [newIP, setNewIP] = useState("");
-
-  // console.log(availableStaticDevices);
-
   const notify = (message, type) => {
     toast[type](message, {
       position: "top-right",
@@ -251,11 +247,24 @@ const Setup = ({
   };
 
   const handleAddSchedule = () => {
+    // Validation before adding a schedule
+    if (
+      !groupIdForSchedule ||
+      !wrackIdForSchedule ||
+      !binIdForSchedule ||
+      !scheduleTime ||
+      !selectedColor
+    ) {
+      notify("Please fill in all fields!", "warning");
+      return;
+    }
+
     const newSchedule = {
       time: scheduleTime,
       enabled: true,
       color: selectedColor.split(",").map(Number),
     };
+
     axios
       .post("http://" + ip + ":5000/new/schedule", {
         group_id: groupIdForSchedule,
@@ -265,11 +274,12 @@ const Setup = ({
       })
       .then((response) => {
         notify("Schedule added successfully!", "success");
+        // Reset form fields
         // setGroupIdForSchedule("");
         // setWrackIdForSchedule("");
         // setBinIdForSchedule("");
-        // setScheduleTime("");
-        // setSelectedColor("");
+        setScheduleTime("");
+        setSelectedColor("");
       })
       .catch((error) => notify("Failed to add schedule", "error"));
   };
@@ -300,21 +310,48 @@ const Setup = ({
       .catch((error) => notify("Failed to delete Schedule", "error"));
   };
 
+  const wrackOptions = racks
+    .filter((rack) => rack.group_id === groupIdForSchedule)
+    .flatMap((rack) =>
+      rack.racks.map((wrack) => {
+        // const binCount = wrack.bins ? wrack.bins.length : 0; // Safely check for bins and calculate length
+        return {
+          value: wrack.rack_id,
+          label: `${wrack.rack_id} `,
+        };
+      })
+    );
+
+  // console.log(racks);
+
+  const binOptions = ["_01", "_02", "_03", "_04"].map((num) => ({
+    value: num,
+    label: `${wrackIdForSchedule}${num}`,
+  }));
+
   return (
     <Container className="setup">
       <h1>Setup</h1>
       <ToastContainer />
       <Row>
         <Col md={4}>
-          <Card className="setup-card">
+          <Card
+            className="setup-card"
+            style={{
+              borderRadius: "10px",
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+            }}
+          >
             <Card.Body>
-              <Card.Title>Add Group</Card.Title>
+              <Card.Title style={{ color: "#007bff", fontWeight: "bold" }}>
+                Add Stack
+              </Card.Title>
               <Form>
                 <Form.Group controlId="newGroupId">
-                  <Form.Label>New Group ID</Form.Label>
+                  <Form.Label>New Stack Name</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Enter Group ID"
+                    placeholder="Enter Stack Name"
                     value={newGroupId || ""}
                     onChange={(e) => setNewGroupId(e.target.value)}
                     isInvalid={!!errors.newGroupId}
@@ -326,7 +363,7 @@ const Setup = ({
                   )}
                 </Form.Group>
                 <Form.Group controlId="newGroupDeviceId">
-                  <Form.Label>New Group Device ID</Form.Label>
+                  <Form.Label>New Stack's Device ID</Form.Label>
                   <Select
                     options={deviceOptions}
                     value={newGroupDeviceId}
@@ -355,7 +392,7 @@ const Setup = ({
 
               {/* Division for Existing Groups */}
               {groups.length !== 0 && (
-                <Card.Title className="mt-4">Existing Groups</Card.Title>
+                <Card.Title className="mt-4">Existing Stacks</Card.Title>
               )}
               {groups.length > 0 && (
                 <div
@@ -387,13 +424,21 @@ const Setup = ({
         </Col>
 
         <Col md={4}>
-          <Card className="setup-card">
+          <Card
+            className="setup-card"
+            style={{
+              borderRadius: "10px",
+              boxShadow: "0 4px 8px rgba(0, 0, 0, 0.2)",
+            }}
+          >
             <Card.Body>
-              <Card.Title>Setup IP Address</Card.Title>
+              <Card.Title style={{ color: "#007bff", fontWeight: "bold" }}>
+                Setup IP Address
+              </Card.Title>
 
               <Form>
                 <Form.Group controlId="groupSelect">
-                  <Form.Label>Group ID</Form.Label>
+                  <Form.Label>Stack Name</Form.Label>
                   <Select
                     value={options.find(
                       (option) => option.value === groupIdForSetIp
@@ -404,8 +449,8 @@ const Setup = ({
                     isClearable
                     maxMenuHeight={150}
                     isMulti={false}
-                    placeholder="Select Group"
-                    noOptionsMessage={() => "No Devices"}
+                    placeholder="Select Stack"
+                    noOptionsMessage={() => "No Stacks"}
                   />
                   {errors1.groupIdForSetIp && (
                     <Alert variant="danger" className="mt-2">
@@ -467,7 +512,7 @@ const Setup = ({
               <Form>
                 {/* Dropdown for selecting Group ID using react-select */}
                 <Form.Group controlId="groupIdForWrack">
-                  <Form.Label>Group ID</Form.Label>
+                  <Form.Label>Stack Name</Form.Label>
                   <Select
                     options={groupOptions}
                     value={groupOptions.find(
@@ -480,8 +525,8 @@ const Setup = ({
                     }
                     isSearchable={true}
                     isClearable
-                    placeholder="Select Group"
-                    noOptionsMessage={() => "No Groups"}
+                    placeholder="Select Stack"
+                    noOptionsMessage={() => "No Stack"}
                     maxMenuHeight={160}
                   />
                 </Form.Group>
@@ -673,64 +718,64 @@ const Setup = ({
                 Add Schedule
               </Card.Title>
               <Form>
-                {/* Dropdown for selecting Group ID */}
+                {/* React-Select for Group ID */}
                 <Form.Group controlId="groupIdForSchedule">
-                  <Form.Label>Group ID</Form.Label>
-                  <Form.Control
-                    as="select"
-                    value={groupIdForSchedule || ""}
-                    onChange={(e) => setGroupIdForSchedule(e.target.value)}
-                  >
-                    <option value="">Select Group</option>
-                    {groups.map((group, index) => (
-                      <option key={index} value={group.group_id}>
-                        {group.group_id}
-                      </option>
-                    ))}
-                  </Form.Control>
+                  <Form.Label>Stack Name</Form.Label>
+                  <Select
+                    options={groupOptions}
+                    value={
+                      groupOptions.find(
+                        (option) => option.value === groupIdForSchedule
+                      ) || ""
+                    }
+                    onChange={(selectedOption) =>
+                      setGroupIdForSchedule(
+                        selectedOption ? selectedOption.value : ""
+                      )
+                    }
+                    placeholder="Select Stack"
+                    noOptionsMessage={() => "No Stacks"}
+                  />
                 </Form.Group>
 
-                {/* Dropdown for selecting Rack ID */}
+                {/* React-Select for Rack ID */}
                 <Form.Group controlId="wrackIdForSchedule">
                   <Form.Label>Rack ID</Form.Label>
-                  <Form.Control
-                    as="select"
-                    value={wrackIdForSchedule || ""}
-                    onChange={(e) => setWrackIdForSchedule(e.target.value)}
-                  >
-                    <option value="">Select Rack</option>
-                    {racks
-                      .filter((rack) => rack.group_id === groupIdForSchedule)
-                      .map((rack, rackIndex) => {
-                        return rack.racks.map((rack, idIndex) => (
-                          <option
-                            key={`${rackIndex}-${idIndex}`}
-                            value={rack.rack_id}
-                          >
-                            {rack.rack_id}
-                          </option>
-                        ));
-                      })}
-                  </Form.Control>
+                  <Select
+                    options={wrackOptions}
+                    value={
+                      wrackOptions.find(
+                        (option) => option.value === wrackIdForSchedule
+                      ) || ""
+                    }
+                    onChange={(selectedOption) =>
+                      setWrackIdForSchedule(
+                        selectedOption ? selectedOption.value : ""
+                      )
+                    }
+                    placeholder="Select Rack"
+                    isDisabled={!groupIdForSchedule}
+                  />
                 </Form.Group>
 
-                {/* Dropdown for selecting Bin ID */}
+                {/* React-Select for Bin ID */}
                 <Form.Group controlId="binIdForSchedule">
                   <Form.Label>Bin ID</Form.Label>
-                  <Form.Control
-                    as="select"
-                    value={binIdForSchedule || ""}
-                    onChange={(e) => setBinIdForSchedule(e.target.value)}
-                  >
-                    <option value="">Select Bin</option>
-                    {["_01", "_02", "_03", "_04"].map((num, index) => {
-                      return (
-                        <option key={index} value={`${num}`}>
-                          {`${wrackIdForSchedule}${num}`}
-                        </option>
-                      );
-                    })}
-                  </Form.Control>
+                  <Select
+                    options={binOptions}
+                    value={
+                      binOptions.find(
+                        (option) => option.value === binIdForSchedule
+                      ) || ""
+                    }
+                    onChange={(selectedOption) =>
+                      setBinIdForSchedule(
+                        selectedOption ? selectedOption.value : ""
+                      )
+                    }
+                    placeholder="Select Bin"
+                    isDisabled={!wrackIdForSchedule}
+                  />
                 </Form.Group>
 
                 {/* Display existing schedules for the selected bin */}
@@ -865,6 +910,13 @@ const Setup = ({
                     width: "100%",
                     borderRadius: "5px",
                   }}
+                  disabled={
+                    !groupIdForSchedule ||
+                    !wrackIdForSchedule ||
+                    !binIdForSchedule ||
+                    !scheduleTime ||
+                    !selectedColor
+                  }
                 >
                   Add Schedule
                 </Button>

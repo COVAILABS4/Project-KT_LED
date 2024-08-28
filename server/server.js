@@ -198,7 +198,7 @@ app.post("/address/setIP", (req, res) => {
 
     writeStaticIP(ip, device_id, "set");
 
-    var fail = updateADDGroupESP(group_id, device_id);
+    let fail = updateADDGroupESP(group_id, device_id);
 
     if (fail) {
       res.status(404).json({ error: "Failed to update the group in ESP" });
@@ -338,12 +338,12 @@ app.post("/import", upload.single("file"), (req, res) => {
   console.log("Fined");
 
   // Call the function to update schedules with a delay
-  // let fail = updateSchedulesWithDelay(scheduleDataArray);
+  let fail = updateImport(scheduleDataArray);
 
-  // if (fail) {
-  //   res.status(404);
-  //   return;
-  // }
+  if (fail) {
+    res.status(404);
+    return;
+  }
   saveDataToFile(cache);
   res.json({ message: "File imported and data updated successfully" });
 });
@@ -419,6 +419,14 @@ app.put("/bin/update/schedule", (req, res) => {
   const { group_id, rack_id, bin_id, scheduled_index, current_enabled_status } =
     req.body;
 
+  console.log(
+    group_id,
+    rack_id,
+    bin_id,
+    scheduled_index,
+    current_enabled_status
+  );
+
   updateCache(); // Ensure cache is up-to-date
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
@@ -431,7 +439,7 @@ app.put("/bin/update/schedule", (req, res) => {
 
   bin.schedules[scheduled_index].enabled = !current_enabled_status;
 
-  var fail = updateScheduleESP(
+  let fail = updateScheduleESP(
     group_id,
     rack_id,
     bin_id,
@@ -472,7 +480,7 @@ app.post("/bin/update/enabled", (req, res) => {
   bin.schedules.forEach((element, index) => {
     element.enabled = !curr;
 
-    var fail = updateScheduleESP(
+    let fail = updateScheduleESP(
       group_id,
       rack_id,
       bin_id,
@@ -512,7 +520,7 @@ app.post("/bin/update/clicked", (req, res) => {
 
   bin.clicked = true;
 
-  var fail = updateBinClicked(
+  let fail = updateBinClicked(
     group_id,
     rack_id,
     bin_id,
@@ -545,7 +553,7 @@ app.put("/bin/update/color", (req, res) => {
   if (!bin) return res.status(404).json({ error: "Bin not found" });
 
   bin.color = new_color;
-  var fail = updateBinColorESP(
+  let fail = updateBinColorESP(
     group_id,
     rack_id,
     bin_id,
@@ -601,7 +609,7 @@ app.post("/new/group", (req, res) => {
   // Add the new group to the cache
   cache.push(newGroup);
 
-  // var fail = updateADDGroupESP(newGroupid, newGroupDeviceId);
+  // let fail = updateADDGroupESP(newGroupid, newGroupDeviceId);
 
   // if (fail) {
   //   res.status(404).json({ error: "Failed to update the group in ESP" });
@@ -628,10 +636,18 @@ app.post("/delete/group", (req, res) => {
     // Remove the group from the cache
     const deviceId = cache[groupIndex].master_device_id;
     let removedGroup = cache.splice(groupIndex, 1);
+    console.log(deviceId);
+
+    let fail = updateDeleteGroupESP(groupId, deviceId);
+
+    if (fail) {
+      res.status(404).json({ error: "Failed to update the group in ESP" });
+      return;
+    }
     updateStaticJsonDelete(groupId, deviceId);
-    console.log(removedGroup);
+    // console.log(removedGroup);
+    updateLedMacDataExcel(deviceId, "delete");
     if (removedGroup[0].racks[0]) {
-      updateLedMacDataExcel(removedGroup[0].racks[0].device_id, "delete");
       removedGroup[0].racks.forEach((data, index) => {
         updateLedMacDataExcelFinal(data.device_id, "delete");
       });
@@ -872,7 +888,7 @@ app.post("/new/wrack", (req, res) => {
   // If the rack doesn't exist, add it
   group.racks.push(newRack);
 
-  var fail = updateADDRackESP(
+  let fail = updateADDRackESP(
     Groupid,
     newWrackid,
     curr_mac,
@@ -910,24 +926,15 @@ app.post("/delete/rack", (req, res) => {
 
   console.log(removedRack);
 
-  // // Optionally, handle any additional cleanup or checks here
-  // // For example, you might want to check if the group should still have a master MAC
-  // if (group.racks.length === 0) {
-  //   group.master_device_id = null; // Clear the master device ID if no racks are left
-  // } else if (rackIndex === 0) {
-  //   // If the first rack was removed, update the master MAC
-  //   group.master_device_id = group.racks[0].mac;
-  // }
-
-  // // Update the device or address mappings if needed
-  // const fail = updateDELDRackESP(Groupid, rackId);
-  // if (fail) {
-  //   return res
-  //     .status(500)
-  //     .json({ error: "Failed to update the device mappings" });
-  // }
-
   updateLedMacDataExcelFinal(removedRack[0].device_id, "delete");
+
+  let fail = updateRemoveRackESP(Groupid, rackId, group.master_device_id);
+
+  if (fail) {
+    res.status(404);
+    return;
+  }
+
   saveDataToFile(cache);
 
   res.json({ message: "Rack deleted successfully", rackId: rackId });
@@ -980,7 +987,7 @@ app.post("/new/schedule", (req, res) => {
     new_schduled.time,
     new_schduled.color
   );
-  var fail = updatePushScheduleESP(
+  let fail = updatePushScheduleESP(
     group_id,
     wrack_id,
     bin_id,
@@ -1019,19 +1026,18 @@ app.post("/delete/schedule", (req, res) => {
 
   console.log("Deleted Schedule:", deletedSchedule);
 
-  // const fail = updatePushScheduleESP(
-  //   group_id,
-  //   wrack_id,
-  //   bin_id,
-  //   deletedSchedule.time,
-  //   deletedSchedule.color,
-  //   group.master_device_id
-  // );
+  const fail = updatePOPScheduleESP(
+    group_id,
+    wrack_id,
+    bin_id,
+    scheduleIndex,
+    group.master_device_id
+  );
 
-  // if (fail) {
-  //   res.status(500).json({ error: "Failed to update ESP device" });
-  //   return;
-  // }
+  if (fail) {
+    res.status(500).json({ error: "Failed to update ESP device" });
+    return;
+  }
 
   saveDataToFile(cache);
   res.json({ message: "Schedule deleted successfully", bin: bin });
@@ -1210,6 +1216,52 @@ const updateADDRackESP = (group_id, new_rack_id, mac, device_id) => {
 
   return false;
 };
+const updatePOPScheduleESP = (
+  group_id,
+  rack_id,
+  bin_id,
+  scheduled_index,
+  device_id
+) => {
+  var ip = readStaticIP(device_id);
+
+  if (ip == "") return true;
+  const request = {
+    ip: ip,
+    data: {
+      group_id,
+      rack_id,
+      bin_id,
+      scheduled_index,
+      operation: "remove-schedule",
+    },
+  };
+  addToQueue(request);
+
+  return false;
+};
+
+const updateRemoveRackESP = (group_id, rack_id, device_id) => {
+  console.log("updateRemoveRack");
+  console.log(group_id, rack_id, device_id);
+
+  var ip = readStaticIP(device_id);
+  console.log(ip);
+
+  if (ip == "") return true;
+  const request = {
+    ip: ip,
+    data: {
+      group_id,
+      rack_id,
+      device_id,
+      operation: "remove-rack",
+    },
+  };
+  addToQueue(request);
+
+  return false;
+};
 
 const updateScheduleESP = (
   group_id,
@@ -1247,6 +1299,39 @@ const updateADDGroupESP = (new_group_id, device_id) => {
     data: {
       new_group_id,
       operation: "add-master",
+    },
+  };
+  addToQueue(request);
+
+  return false;
+};
+
+const updateImport = (array,de) => {
+  var ip = readStaticIP(device_id);
+  console.log(group_id, device_id, ip);
+  
+  if (ip == "") return true;
+  const request = {
+    ip: ip,
+    data: {
+      group_id,
+      operation: "import",
+    },
+  };
+  addToQueue(request);
+
+  return false;
+};
+const updateDeleteGroupESP = (group_id, device_id) => {
+  var ip = readStaticIP(device_id);
+  console.log(group_id, device_id, ip);
+
+  if (ip == "") return true;
+  const request = {
+    ip: ip,
+    data: {
+      group_id,
+      operation: "remove-master",
     },
   };
   addToQueue(request);

@@ -302,7 +302,7 @@ def handle_click_change_message(msg_data, config, rack_id):
 def handle_add_rack(msg_data):
     global bins
     print(msg_data)
-    new_rack_id = msg_data['new_rack_id']
+    new_rack_id = msg_data['new_rack_id']   
     print(new_rack_id)
     master = msg_data['master']
     print(new_rack_id, master[:2])
@@ -372,8 +372,71 @@ def handle_schedule_enable_change_message(msg_data, config, rack_id):
     change_enabled_state("sch.json", bin_index, config['bins'][bin_index]['schedules'][scheduled_index]['time'], current_enabled_status)
     print("schedule enabled status changed and saved to file") 
 
+def handle_remove_rack(msg_data):
+    global bins
+    
+    new_rack = {
+        "rack_id": "",
+        "master": "",
+        "bins": []
+    }
+    led_pins = [12, 25, 26, 27]
+    button_pins = [13, 14, 15, 16]
+    bin_count = 4
+    new_rack['bins'] = [
+        {
+            "color":[0, 0, 0],
+            "led_pin": led_pins[i],
+            "bin_id": f"{""}_0{i+1}",
+            "button_pin": button_pins[i],
+            "enabled": True,
+            "schedules": [],
+            "clicked": False
+        }
+        for i in range(bin_count)
+    ]
+    
+    
+    print("nnnnnnnnnnnnnnnnnn")
+    print(new_rack)
+    with open('slave.json', 'w') as f:
+        ujson.dump(new_rack, f)
+        print("write Success")
+    with open('sch.json', 'w') as f:
+        ujson.dump({}, f)
+        print("write Success2")
+    time.sleep(1)
+    main()
+
+def handle_remove_schedule(msg_data):
+    """
+    Removes a schedule from a bin's schedule list.
+    
+    :param msg_data: A dictionary containing the 'bin_id' and 'schedule_time' to remove.
+    """
+    global bins
+    bin_id_to_modify = msg_data.get('bin_id')
+    schedule_time_to_remove = msg_data.get('schedule_time')
+
+    if bin_id_to_modify and schedule_time_to_remove:
+        for bin in bins:
+            if bin['bin_id'] == bin_id_to_modify:
+                # Filter out the schedule with the specified time
+                bin['schedules'] = [schedule for schedule in bin['schedules'] if schedule['time'] != schedule_time_to_remove]
+                
+                # Update the 'slave.json' file with the modified bin schedule
+                with open('slave.json', 'w') as f:
+                    ujson.dump({"bins": bins}, f)
+                    print(f"Schedule {schedule_time_to_remove} removed from bin {bin_id_to_modify} and saved to file.")
+                break
+        else:
+            print(f"No bin found with 'bin_id': {bin_id_to_modify}")
+    else:
+        print("No 'bin_id' or 'schedule_time' specified in message data for removal.")
+
+
 def espnow_listener(config, rack_id):
-    global e, bins, message_queue, avail,rtc,global_time
+    global e, bins, message_queue, avail, rtc, global_time
     print("F1")
     while True:
         try:
@@ -385,29 +448,30 @@ def espnow_listener(config, rack_id):
             host, msg = e.recv()
             if msg:
                 print(f"Received message from {host}: {msg}")
-                if not print("F2") and  msg == b'avail':
+                if not print("F2") and msg == b'avail':
                     avail = True
                     send_messages_from_queue()
                     continue
-                    
-                elif not print("F3") and  msg == b'unavail':
+
+                elif not print("F3") and msg == b'unavail':
                     avail = False
                     print("Availability set to False")
                     continue
-                elif  not print("F4") and  "999999" in msg :
+                elif not print("F4") and "999999" in msg:
                     print("Received message from peer:", msg)
                     global_time = msg.decode()
-                    hour, minute, second , dummy = map(int, global_time.split(":"))
+                    hour, minute, second, dummy = map(int, global_time.split(":"))
                     rtc.datetime((2024, 8, 3, 6, hour, minute, second, 0))
                     continue
+
                 try:
                     print("F4")
                     msg_data = ujson.loads(msg)
                     operation = msg_data.get('operation')
                     print("F5")
-                    if not print("F6") and  operation == 'push':
+                    if not print("F6") and operation == 'push':
                         handle_push_message(msg_data, config, rack_id)
-                        
+
                     elif operation == 'color-change':
                         handle_color_change_message(msg_data, config, rack_id)
                     elif operation == 'click-change':
@@ -418,9 +482,13 @@ def espnow_listener(config, rack_id):
                         handle_schedule_enable_change_message(msg_data, config, rack_id)
                     elif operation == 'add-rack':
                         handle_add_rack(msg_data)
+                    elif operation == 'remove-rack':
+                        handle_add_rack(msg_data)
+                    elif operation == 'remove-schedule':
+                        handle_remove_schedule(msg_data)
                     else:
                         print(f"Unknown operation: {operation}")
-                    
+
                     try:
                         e.add_peer(host)
                     except Exception:
@@ -432,7 +500,6 @@ def espnow_listener(config, rack_id):
 
         except Exception as err:
             print(f"Error receiving message: {err}")
-            # If the error is related to ESP-NOW instance, consider reinitializing it.
             e = init_espnow()
             try:
                 e.add_peer(master_mac)
@@ -440,7 +507,7 @@ def espnow_listener(config, rack_id):
                 print("Already added.")
 
         time.sleep(1)  # Minimal delay to keep the system running
-     
+ 
 def send_messages_from_queue():
     global message_queue, e ,master_mac
     #print(message_queue)
@@ -544,11 +611,10 @@ def schedule_checker():
         current_minute = "0" + current_minute if len(current_minute) == 1   else current_minute;
     
         print(current_hour + " : " + current_minute)
-        print(config['bins'])
+
         for index, bin in enumerate(config['bins']):  # Corrected the variable names
             for schedule in bin['schedules']:
                 hour, minute = tuple(schedule['time'].split(":"))
-                print(current_hour + " : " + current_minute ,"---",hour, minute )
                 if schedule['enabled'] and hour == current_hour and minute == current_minute:
                     bins[index].color = tuple(schedule['color'])
                     bins[index].change_led_color()
@@ -566,4 +632,4 @@ if __name__ == "__main__":
 
 
 
- 
+

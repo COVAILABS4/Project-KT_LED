@@ -4,7 +4,11 @@ import "./Groups.css";
 const Groups = ({ data, handleBinClick }) => {
   return (
     <div className="groups-section">
-      <h2 className="groups-header">Groups</h2>
+      {data.length !== 0 ? (
+        <h2 className="groups-header">Stack</h2>
+      ) : (
+        <h2 className="groups-header">No Stacks Found</h2>
+      )}
       {data.map((group, index) => (
         <div key={index} className="group-container">
           <h3>{group.Group_id}</h3>
@@ -17,26 +21,35 @@ const Groups = ({ data, handleBinClick }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {rack.bins.map((bin, rowIndex) => (
-                    <tr key={rowIndex}>
-                      <td
-                        style={{
-                          backgroundColor: bin.clicked
-                            ? "gray"
-                            : `rgb(${bin.color})`,
-                        }}
-                        onClick={() => {
-                          handleBinClick(
-                            group.Group_id,
-                            rack.rack_id,
-                            bin.bin_id
-                          );
-                        }}
-                      >
-                        {bin.bin_id}
-                      </td>
-                    </tr>
-                  ))}
+                  {rack.bins.map((bin, rowIndex) => {
+                    // Normalize bin color to ensure it's in the correct format
+                    const colorArray = Array.isArray(bin.color)
+                      ? bin.color
+                      : bin.color.split(",").map(Number);
+
+                    return (
+                      <tr key={rowIndex}>
+                        <td
+                          style={{
+                            backgroundColor: bin.clicked
+                              ? "gray"
+                              : `rgb(${bin.color})`,
+                          }}
+                          onClick={() => {
+                            handleBinClick(
+                              group.Group_id,
+                              rack.rack_id,
+                              bin.bin_id
+                            );
+                          }}
+                        >
+                          <p style={{ margin: "0px", padding: "0" }}>
+                            {bin.bin_id}
+                          </p>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             ))}

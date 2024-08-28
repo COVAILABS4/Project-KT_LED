@@ -32,7 +32,7 @@ function App() {
 
   useEffect(() => {
     // Call fetchData every second
-    const intervalId = setInterval(fetchData, 1500);
+    const intervalId = setInterval(fetchData, 1000);
 
     // fetchData();
     // Cleanup function to clear the interval when the component unmounts
@@ -51,7 +51,7 @@ function App() {
         device_id: group.master_device_id,
       });
 
-      console.log(groupArray);
+      // console.log(groupArray);
 
       // Populate racks array
       let rackObj = { group_id: group.Group_id, racks: [] };
@@ -143,7 +143,7 @@ function App() {
             slaves.push(device);
           }
         });
-        console.log(slaves);
+        // console.log(slaves);
 
         response.data.forEach((device) => {
           if (device.available && !device.isMaster) {
