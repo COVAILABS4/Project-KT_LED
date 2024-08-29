@@ -5,9 +5,9 @@ const Groups = ({ data, handleBinClick }) => {
   return (
     <div className="groups-section">
       {data.length !== 0 ? (
-        <h2 className="groups-header">Stack</h2>
+        <h2 className="groups-header">Station</h2>
       ) : (
-        <h2 className="groups-header">No Stacks Found</h2>
+        <h2 className="groups-header">No Stations Found</h2>
       )}
       {data.map((group, index) => (
         <div key={index} className="group-container">

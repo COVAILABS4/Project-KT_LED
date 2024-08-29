@@ -81,7 +81,7 @@ const BinDetails = ({
         Close
       </Button>
       <h3>Bin Details</h3>
-      <p>Stack Name: {selectedBin.group_id}</p>
+      <p>Station Name: {selectedBin.group_id}</p>
       <p>Rack ID: {selectedBin.rack_id}</p>
       <p>Bin ID: {selectedBin.bin_id}</p>
       <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>

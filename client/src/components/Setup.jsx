@@ -72,18 +72,18 @@ const Setup = ({
         newGroupDeviceId: newGroupDeviceId.value,
       })
       .then((response) => {
-        notify("Stack added successfully!", "success");
+        notify("Station added successfully!", "success");
         setNewGroupId("");
         setNewGroupDeviceId("");
         setErrors({}); // Clear errors upon successful addition
       })
-      .catch((error) => notify("Failed to add Stack", "error"));
+      .catch((error) => notify("Failed to add Station", "error"));
   };
 
   const handleDeleteGroup = async (groupId) => {
     try {
       await axios.post("http://" + ip + ":5000/delete/group", { groupId });
-      notify("Stack deleted successfully!", "success");
+      notify("Station deleted successfully!", "success");
     } catch (error) {
       notify("Failed to delete group", "error");
     }
@@ -344,14 +344,14 @@ const Setup = ({
           >
             <Card.Body>
               <Card.Title style={{ color: "#007bff", fontWeight: "bold" }}>
-                Add Stack
+                Add Station
               </Card.Title>
               <Form>
                 <Form.Group controlId="newGroupId">
-                  <Form.Label>New Stack Name</Form.Label>
+                  <Form.Label>New Station Name</Form.Label>
                   <Form.Control
                     type="text"
-                    placeholder="Enter Stack Name"
+                    placeholder="Enter Station Name"
                     value={newGroupId || ""}
                     onChange={(e) => setNewGroupId(e.target.value)}
                     isInvalid={!!errors.newGroupId}
@@ -363,7 +363,7 @@ const Setup = ({
                   )}
                 </Form.Group>
                 <Form.Group controlId="newGroupDeviceId">
-                  <Form.Label>New Stack's Device ID</Form.Label>
+                  <Form.Label>New Station's Device ID</Form.Label>
                   <Select
                     options={deviceOptions}
                     value={newGroupDeviceId}
@@ -392,7 +392,7 @@ const Setup = ({
 
               {/* Division for Existing Groups */}
               {groups.length !== 0 && (
-                <Card.Title className="mt-4">Existing Stacks</Card.Title>
+                <Card.Title className="mt-4">Existing Stations</Card.Title>
               )}
               {groups.length > 0 && (
                 <div
@@ -438,7 +438,7 @@ const Setup = ({
 
               <Form>
                 <Form.Group controlId="groupSelect">
-                  <Form.Label>Stack Name</Form.Label>
+                  <Form.Label>Station Name</Form.Label>
                   <Select
                     value={options.find(
                       (option) => option.value === groupIdForSetIp
@@ -449,8 +449,8 @@ const Setup = ({
                     isClearable
                     maxMenuHeight={150}
                     isMulti={false}
-                    placeholder="Select Stack"
-                    noOptionsMessage={() => "No Stacks"}
+                    placeholder="Select Station"
+                    noOptionsMessage={() => "No Stations"}
                   />
                   {errors1.groupIdForSetIp && (
                     <Alert variant="danger" className="mt-2">
@@ -512,7 +512,7 @@ const Setup = ({
               <Form>
                 {/* Dropdown for selecting Group ID using react-select */}
                 <Form.Group controlId="groupIdForWrack">
-                  <Form.Label>Stack Name</Form.Label>
+                  <Form.Label>Station Name</Form.Label>
                   <Select
                     options={groupOptions}
                     value={groupOptions.find(
@@ -525,8 +525,8 @@ const Setup = ({
                     }
                     isSearchable={true}
                     isClearable
-                    placeholder="Select Stack"
-                    noOptionsMessage={() => "No Stack"}
+                    placeholder="Select Station"
+                    noOptionsMessage={() => "No Station"}
                     maxMenuHeight={160}
                   />
                 </Form.Group>
@@ -720,7 +720,7 @@ const Setup = ({
               <Form>
                 {/* React-Select for Group ID */}
                 <Form.Group controlId="groupIdForSchedule">
-                  <Form.Label>Stack Name</Form.Label>
+                  <Form.Label>Station Name</Form.Label>
                   <Select
                     options={groupOptions}
                     value={
@@ -733,8 +733,8 @@ const Setup = ({
                         selectedOption ? selectedOption.value : ""
                       )
                     }
-                    placeholder="Select Stack"
-                    noOptionsMessage={() => "No Stacks"}
+                    placeholder="Select Station"
+                    noOptionsMessage={() => "No Stations"}
                   />
                 </Form.Group>
 
