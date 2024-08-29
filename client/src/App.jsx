@@ -129,7 +129,7 @@ function App() {
       });
 
     axios
-      .get("http://localhost:5000/device/excel")
+      .get(`http://${ip}:5000/device/excel`)
       .then((response) => {
         // console.log("Excel data:", response.data);
 
