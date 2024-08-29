@@ -1,0 +1,16 @@
+cd /home/KRISHTEC/Project-KT_LED/server
+
+
+pm2 start npm --name "node-server" -- start
+
+
+cd /home/KRISHTEC/Project-KT_LED/client/dist
+
+
+pm2 serve /home/KRISHTEC/Project-KT_LED/client/dist --spa --name "spa-server" --port 8080
+
+
+pm2 startup
+
+
+pm2 save
