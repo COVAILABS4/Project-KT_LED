@@ -262,6 +262,19 @@ app.get("/data", (req, res) => {
   }
 });
 
+const updateSchedulesWithDelay = (scheduleDataArray) => {
+  scheduleDataArray.forEach((scheduleData, index) => {
+    updatePushScheduleESP(
+      scheduleData.group_id,
+      scheduleData.rack_id,
+      scheduleData.bin_id,
+      scheduleData.new_schedule_time,
+      scheduleData.color,
+      scheduleData.master_device_id
+    );
+  });
+};
+
 // Import route
 app.post("/import", upload.single("file"), (req, res) => {
   console.log("Called");
@@ -272,23 +285,29 @@ app.post("/import", upload.single("file"), (req, res) => {
   const worksheet = workbook.Sheets[sheetName];
   const jsonData = xlsx.utils.sheet_to_json(worksheet);
 
+  console.log(jsonData, file);
+
   updateCache(); // Ensure cache is up-to-date
 
   const scheduleDataArray = [];
+  let errors = [];
 
   jsonData.forEach((row) => {
     const { Group_id, rack_id, bin_id, scheduled_time, color } = row;
     const group = cache.find((group) => group.Group_id === Group_id);
     if (!group) {
-      return res.status(404).json({ error: "Group not found" });
+      errors.push(`Group ${Group_id} not found`);
+      return;
     }
     const rack = group.racks.find((rack) => rack.rack_id === rack_id);
     if (!rack) {
-      return res.status(404).json({ error: "Rack not found" });
+      errors.push(`Rack ${rack_id} not found in group ${Group_id}`);
+      return;
     }
     const bin = rack.bins.find((bin) => bin.bin_id === bin_id);
     if (!bin) {
-      return res.status(404).json({ error: "Bin not found" });
+      errors.push(`Bin ${bin_id} not found in rack ${rack_id}`);
+      return;
     }
 
     const colorArr = color.split(",").map(Number);
@@ -335,16 +354,17 @@ app.post("/import", upload.single("file"), (req, res) => {
 
   fs.unlinkSync(file.path); // Remove the uploaded file
 
-  console.log("Fined");
+  if (errors.length > 0) {
+    // If there were errors, respond with them
+    return res.status(400).json({ errors });
+  }
+
+  console.log("Finished");
 
   // Call the function to update schedules with a delay
-  let fail = updateImport(scheduleDataArray);
+  updateSchedulesWithDelay(scheduleDataArray);
 
-  if (fail) {
-    res.status(404);
-    return;
-  }
-  saveDataToFile(cache);
+  saveDataToFile(cache); // Save updated cache to file
   res.json({ message: "File imported and data updated successfully" });
 });
 
@@ -508,6 +528,7 @@ app.post("/bin/update/enabled", (req, res) => {
 app.post("/bin/update/clicked", (req, res) => {
   const { group_id, rack_id, bin_id } = req.body;
   updateCache(); // Ensure cache is up-to-date
+  console.log(group_id, rack_id);
 
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
@@ -520,6 +541,8 @@ app.post("/bin/update/clicked", (req, res) => {
 
   bin.clicked = true;
 
+  console.log(group_id, rack_id, bin_id, group.master_device_id);
+
   let fail = updateBinClicked(
     group_id,
     rack_id,
@@ -531,6 +554,7 @@ app.post("/bin/update/clicked", (req, res) => {
     res.status(404);
     return;
   }
+  console.log("ADDED");
   saveDataToFile(cache);
 
   const clone = JSON.parse(JSON.stringify(bin));
@@ -1024,13 +1048,13 @@ app.post("/delete/schedule", (req, res) => {
 
   const [deletedSchedule] = bin.schedules.splice(scheduleIndex, 1);
 
-  console.log("Deleted Schedule:", deletedSchedule);
+  console.log("Deleted Schedule:", deletedSchedule.time);
 
   const fail = updatePOPScheduleESP(
     group_id,
     wrack_id,
     bin_id,
-    scheduleIndex,
+    deletedSchedule.time,
     group.master_device_id
   );
 
@@ -1046,10 +1070,17 @@ app.post("/delete/schedule", (req, res) => {
 let queue = [];
 let isAvail = false;
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 app.get("/avail", (req, res) => {
   console.log("-----------------------------", queue);
   isAvail = true;
-  processQueue();
+  // Promise();
+
+  sleep(5000);
+  // processQueue();
 
   res.send("Processing queue.");
 });
@@ -1071,37 +1102,53 @@ function normalize(data) {
   return Math.floor(normalize_data);
 }
 
-const addToQueue = (request) => {
-  queue.push(request);
+const queues = {}; // Object to maintain separate queues for each server
+const unavailableServers = {}; // Object to track temporarily unavailable servers
 
-  console.log(queue);
-  if (isAvail) processQueue();
+const addToQueue = (request) => {
+  const { ip } = request;
+
+  // Initialize the queue for the server if it doesn't exist
+  if (!queues[ip]) {
+    queues[ip] = [];
+  }
+
+  // Add the request to the respective server's queue
+  queues[ip].push(request);
+  console.log(queues);
+
+  console.log(`Queue for ${ip}:`, queues[ip]);
 };
 
-const processQueue = async () => {
-  let i = 0;
+const processQueueForServer = async (ip) => {
+  // Check if the queue for the server has any requests
+  if (queues[ip].length > 0) {
+    const requests = queues[ip]; // Get the full queue for the server
 
-  while (queue.length !== 0 && i < 10) {
-    const request = queue[0];
     try {
       const response = await axios.post(
-        "http://" + request.ip + ":8000/",
-        request.data
+        `http://${ip}:8000/`, // Send the entire array to the server
+        { requests } // Send the requests array as data
       );
-      console.log("Request processed successfully:", response.data);
-      queue.shift();
-      i++;
-      if (i == 10) return;
+      console.log(
+        `All requests processed successfully for ${ip}:`,
+        response.data
+      );
+
+      // Clear the queue after successful processing
+      queues[ip] = [];
+
+      // Pause before the next check (if needed)
       await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
       if (error.code === "ECONNREFUSED") {
-        console.error("Connection refused, retrying in 1 second...");
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        console.error(`Connection refused for ${ip}, marking as unavailable.`);
+        unavailableServers[ip] = Date.now(); // Mark the server as unavailable
       } else if (error.code === "ECONNRESET") {
-        console.error("Connection reset, stopping queue processing.");
+        console.error(`Connection reset for ${ip}, stopping the queue.`);
       } else {
         console.error(
-          "Error processing request:",
+          `Error processing requests for ${ip}:`,
           error.response ? error.response.data : error.message
         );
       }
@@ -1109,9 +1156,49 @@ const processQueue = async () => {
   }
 };
 
+// Function to check if any server is available and process its queue
+const checkServersAndProcess = async () => {
+  const servers = Object.keys(queues);
+
+  for (const ip of servers) {
+    // Check if the server is marked unavailable and skip it if so
+    if (unavailableServers[ip]) {
+      const timeSinceUnavailable = Date.now() - unavailableServers[ip];
+      // Retry the server after 10 seconds of being unavailable
+      if (timeSinceUnavailable < 10000) {
+        console.log(`Server ${ip} is still unavailable, skipping processing.`);
+        continue;
+      } else {
+        console.log(`Rechecking availability of server ${ip}`);
+        delete unavailableServers[ip]; // Allow the server to be checked again
+      }
+    }
+
+    // Check if the queue for the server is not empty
+    if (queues[ip] && queues[ip].length > 0) {
+      console.log(`Processing queue for server ${ip}`);
+      await processQueueForServer(ip);
+    }
+  }
+};
+
+// Periodic listener to check for available servers and process their queues
+setInterval(() => {
+  console.log("Checking for available servers...");
+  checkServersAndProcess();
+}, 5000); // Check every 5 seconds
+
 const updateBinClicked = async (group_id, rack_id, bin_id, device_id) => {
+  console.log(group_id, rack_id, bin_id, device_id);
+
   var ip = readStaticIP(device_id);
+
+  console.log(ip);
+
   if (ip == "") return true;
+
+  console.log("YESSS");
+
   const request = {
     ip: ip,
     data: {
@@ -1220,7 +1307,7 @@ const updatePOPScheduleESP = (
   group_id,
   rack_id,
   bin_id,
-  scheduled_index,
+  scheduled_time,
   device_id
 ) => {
   var ip = readStaticIP(device_id);
@@ -1232,7 +1319,7 @@ const updatePOPScheduleESP = (
       group_id,
       rack_id,
       bin_id,
-      scheduled_index,
+      scheduled_time,
       operation: "remove-schedule",
     },
   };
@@ -1306,10 +1393,10 @@ const updateADDGroupESP = (new_group_id, device_id) => {
   return false;
 };
 
-const updateImport = (array,de) => {
+const updateImport = (array, de) => {
   var ip = readStaticIP(device_id);
   console.log(group_id, device_id, ip);
-  
+
   if (ip == "") return true;
   const request = {
     ip: ip,

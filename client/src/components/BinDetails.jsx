@@ -44,6 +44,8 @@ const BinDetails = ({
         }
       );
 
+      alert("LED TURN OFF Successfully!!!!!!!");
+
       setShowBinDetails(false);
       setSelectedBin(response.data);
       // setShowBinDetails(true);
@@ -84,7 +86,7 @@ const BinDetails = ({
       <p>Station Name: {selectedBin.group_id}</p>
       <p>Rack ID: {selectedBin.rack_id}</p>
       <p>Bin ID: {selectedBin.bin_id}</p>
-      <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
+      {/* <div style={{ display: "flex", gap: "10px", marginBottom: "10px" }}>
         Color:
         <span>
           <div
@@ -95,8 +97,8 @@ const BinDetails = ({
             }}
           ></div>
         </span>
-      </div>
-      <Button onClick={() => setShowColorPicker(true)}>Update Color</Button>
+      </div> */}
+      {/* <Button onClick={() => setShowColorPicker(true)}>Update Color</Button> */}
       <div>
         <p>Enabled Status : {selectedBin.enabled.toString()}</p>
         <Button

@@ -65,17 +65,16 @@ const readStaticIP = (id) => {
   try {
     const fileContent = fs.readFileSync("./static.json", "utf8");
     const data = JSON.parse(fileContent);
-    console.log(data,id);
-    const new_data = data.find((item)=>item.ID===id)
+    console.log(data, id);
+    const new_data = data.find((item) => item.ID === id);
     console.log(new_data);
-    console.log(new_data.IP,new_data['IP']);
+    console.log(new_data.IP, new_data["IP"]);
     return new_data.IP;
   } catch (error) {
     console.error("Error reading static.json:", error);
     throw new Error("Error reading static.json");
   }
 };
-
 
 // // Utility function to write static IP to static.json
 // const writeStaticIP = (newIP) => {
@@ -135,7 +134,7 @@ app.post("/click/update", (req, res) => {
 
   let group = cache.find((group) => group.Group_id === bin_details.group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
-  const id = group.master_id
+  const id = group.master_id;
   const rack = group.racks.find((rack) => rack.rack_id === bin_details.rack_id);
   if (!rack) return res.status(404).json({ error: "Rack not found" });
 
@@ -162,8 +161,6 @@ app.get("/data", (req, res) => {
 
 const updateSchedulesWithDelay = (scheduleDataArray) => {
   scheduleDataArray.forEach((scheduleData, index) => {
-
-
     setTimeout(() => {
       updatePushScheduleESP(
         scheduleData.id,
@@ -195,7 +192,7 @@ app.post("/import", upload.single("file"), (req, res) => {
     if (!group) {
       return res.status(404).json({ error: "Group not found" });
     }
-    const id = group.master_id
+    const id = group.master_id;
     const rack = group.racks.find((rack) => rack.rack_id === rack_id);
     if (!rack) {
       return res.status(404).json({ error: "Rack not found" });
@@ -214,7 +211,7 @@ app.post("/import", upload.single("file"), (req, res) => {
 
     // Add schedule data to array for delayed processing
     scheduleDataArray.push({
-      id : id,
+      id: id,
       group_id: Group_id,
       rack_id: rack_id,
       bin_id: bin_id,
@@ -224,8 +221,7 @@ app.post("/import", upload.single("file"), (req, res) => {
   });
 
   saveDataToFile(cache);
-  fs.unlinkSync(file.path); 
-
+  fs.unlinkSync(file.path);
 
   updateSchedulesWithDelay(scheduleDataArray);
 
@@ -237,10 +233,9 @@ app.get("/bin", (req, res) => {
   const { group_id, rack_id, bin_id } = req.query;
   updateCache(); // Ensure cache is up-to-date
 
-  
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
-  const id = group.master_id
+  const id = group.master_id;
   const rack = group.racks.find((rack) => rack.rack_id === rack_id);
   if (!rack) return res.status(404).json({ error: "Rack not found" });
 
@@ -261,7 +256,7 @@ app.put("/bin/update/schedule", (req, res) => {
   updateCache(); // Ensure cache is up-to-date
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
-  const id = group.master_id
+  const id = group.master_id;
   const rack = group.racks.find((rack) => rack.rack_id === rack_id);
   if (!rack) return res.status(404).json({ error: "Rack not found" });
 
@@ -286,7 +281,7 @@ app.post("/bin/update/enabled", (req, res) => {
 
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
-  const id = group.master_id
+  const id = group.master_id;
   const rack = group.racks.find((rack) => rack.rack_id === rack_id);
   if (!rack) return res.status(404).json({ error: "Rack not found" });
 
@@ -311,7 +306,7 @@ app.post("/bin/update/clicked", (req, res) => {
 
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
-  const id = group.master_id
+  const id = group.master_id;
   const rack = group.racks.find((rack) => rack.rack_id === rack_id);
   if (!rack) return res.status(404).json({ error: "Rack not found" });
 
@@ -319,7 +314,7 @@ app.post("/bin/update/clicked", (req, res) => {
   if (!bin) return res.status(404).json({ error: "Bin not found" });
 
   bin.clicked = !bin.clicked;
-  updateBinClicked(id,group_id, rack_id, bin_id);
+  updateBinClicked(id, group_id, rack_id, bin_id);
   saveDataToFile(cache);
 
   const clone = JSON.parse(JSON.stringify(bin));
@@ -335,7 +330,7 @@ app.put("/bin/update/color", (req, res) => {
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
 
-  const id = group.master_id
+  const id = group.master_id;
   const rack = group.racks.find((rack) => rack.rack_id === rack_id);
   if (!rack) return res.status(404).json({ error: "Rack not found" });
 
@@ -344,7 +339,7 @@ app.put("/bin/update/color", (req, res) => {
 
   bin.color = new_color;
   saveDataToFile(cache);
-  updateBinColorESP(id,group_id, rack_id, bin_id, new_color);
+  updateBinColorESP(id, group_id, rack_id, bin_id, new_color);
 
   const clone = JSON.parse(JSON.stringify(bin));
   clone.group_id = group_id;
@@ -354,7 +349,7 @@ app.put("/bin/update/color", (req, res) => {
 
 app.post("/new/group", (req, res) => {
   const { newGroupid } = req.body;
-  var id = "KT-1"
+  var id = "KT-1";
   updateCache(); // Ensure cache is up-to-date
 
   const existingGroup = cache.find((group) => group.Group_id === newGroupid);
@@ -363,12 +358,12 @@ app.post("/new/group", (req, res) => {
 
   const newGroup = {
     Group_id: newGroupid,
-    master_id : id,
+    master_id: id,
     racks: [],
   };
 
   cache.push(newGroup);
-  updateADDGroupESP(id,newGroupid);
+  updateADDGroupESP(id, newGroupid);
   saveDataToFile(cache);
   res.json({ message: "Group added successfully", group: newGroup });
 });
@@ -381,7 +376,7 @@ function readDeviceConfig(id) {
     console.log(err);
     throw new Error("Failed to read Excel file");
   }
-  
+
   const sheetName = workbook.SheetNames[0];
   const sheet = workbook.Sheets[sheetName];
   const users = xlsx.utils.sheet_to_json(sheet);
@@ -408,7 +403,7 @@ app.post("/new/wrack", (req, res) => {
 
   const group = cache.find((group) => group.Group_id === Groupid);
   if (!group) return res.status(404).json({ error: "Group not found" });
-  const master_id = group.master_id
+  const master_id = group.master_id;
   // Check if rack already exists in the current group
   const existingRack = group.racks.find((rack) => rack.rack_id === newWrackid);
   if (existingRack)
@@ -474,7 +469,7 @@ app.post("/new/wrack", (req, res) => {
     group.racks = []; // Clear all racks if MACs match
   }
   group.racks.push(newRack);
-  updateADDRackESP(master_id ? master_id : id,Groupid, newWrackid, curr_mac);
+  updateADDRackESP(master_id ? master_id : id, Groupid, newWrackid, curr_mac);
   saveDataToFile(cache);
 
   res.json({ message: "Rack added successfully", rack: newRack });
@@ -486,7 +481,7 @@ app.post("/new/schedule", (req, res) => {
 
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
-  const id = group.master_id
+  const id = group.master_id;
   const rack = group.racks.find((rack) => rack.rack_id === wrack_id);
   if (!rack) return res.status(404).json({ error: "Rack not found" });
 
@@ -518,28 +513,33 @@ app.post("/new/schedule", (req, res) => {
     new_schduled.color
   );
   res.json({ message: "Schedule added successfully", bin: bin });
-});const readSchedule = () => {
-  const data = fs.readFileSync('schedule.json');
+});
+const readSchedule = () => {
+  const data = fs.readFileSync("schedule.json");
   return JSON.parse(data);
 };
 
 // Write schedule data to the JSON file
 const writeSchedule = (data) => {
-  fs.writeFileSync('schedule.json', JSON.stringify(data, null, 2));
+  fs.writeFileSync("schedule.json", JSON.stringify(data, null, 2));
 };
-
 
 async function sentReq(id, request) {
   try {
-    const response = await axios.post("http://" + request.ip + ":8000/", request.data);
+    const response = await axios.post(
+      "http://" + request.ip + ":8000/",
+      request.data
+    );
     console.log(`Request processed successfully for ${id}:`, response.data);
   } catch (error) {
-    console.error("Error processing request:", error.response ? error.response.data : error.message);
+    console.error(
+      "Error processing request:",
+      error.response ? error.response.data : error.message
+    );
   }
 }
 
-
-app.get('/avail/:id', (req, res) => {
+app.get("/avail/:id", (req, res) => {
   const id = req.params.id;
   let schedule = readSchedule();
   const index = getScheduleIndex(id, schedule);
@@ -558,7 +558,7 @@ app.get('/avail/:id', (req, res) => {
   res.send(`Processing queue for ${id}.`);
 });
 
-app.get('/stop/:id', (req, res) => {
+app.get("/stop/:id", (req, res) => {
   const id = req.params.id;
   let schedule = readSchedule();
   const index = getScheduleIndex(id, schedule);
@@ -577,10 +577,7 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-
 //=+-----------------------------------------------//
-
-
 
 const normalize = (data) => {
   let normalize_data = (data / 255) * 64;
@@ -588,7 +585,7 @@ const normalize = (data) => {
 };
 
 const getScheduleIndex = (id, schedule) => {
-  return schedule.findIndex(item => item.id === id);
+  return schedule.findIndex((item) => item.id === id);
 };
 
 const addToQueue = (id, request) => {
@@ -616,18 +613,22 @@ const addToQueue = (id, request) => {
   writeSchedule(schedule);
 };
 
-
-async function sentReq(id,request) {
+async function sentReq(id, request) {
   try {
-    const response = await axios.post("http://" + request.ip + ":8000/", request.data);
+    const response = await axios.post(
+      "http://" + request.ip + ":8000/",
+      request.data
+    );
     console.log(`Request processed successfully for ${id}:`, response.data);
   } catch (error) {
-    if (error.code === 'ECONNREFUSED') {
-    } else if (error.code === 'ECONNRESET') {
+    if (error.code === "ECONNREFUSED") {
+    } else if (error.code === "ECONNRESET") {
       console.error("Connection reset, stopping queue processing.");
     } else {
-      console.error("Error processing request:", error.response ? error.response.data : error.message);
-      
+      console.error(
+        "Error processing request:",
+        error.response ? error.response.data : error.message
+      );
     }
   }
 }
@@ -648,7 +649,10 @@ const processQueue = async (id) => {
   schedule[index].isProcessing = true;
   writeSchedule(schedule);
 
-  while (schedule[index].queue.length !== 0 && !schedule[index].stopProcessing) {
+  while (
+    schedule[index].queue.length !== 0 &&
+    !schedule[index].stopProcessing
+  ) {
     const request = schedule[index].queue[0];
     try {
       await sentReq(id, request);
@@ -669,7 +673,6 @@ const processQueue = async (id) => {
   }
 };
 
-
 // Example function updates with id parameter
 const updateBinClicked = async (id, group_id, rack_id, bin_id) => {
   var ip = readStaticIP(id);
@@ -687,7 +690,11 @@ const updateBinClicked = async (id, group_id, rack_id, bin_id) => {
 
 const updateBinColorESP = async (id, group_id, rack_id, bin_id, color) => {
   var ip = readStaticIP(id);
-  const normalizedColor = [normalize(color[0]), normalize(color[1]), normalize(color[2])];
+  const normalizedColor = [
+    normalize(color[0]),
+    normalize(color[1]),
+    normalize(color[2]),
+  ];
   const request = {
     ip: ip,
     data: {
@@ -701,9 +708,20 @@ const updateBinColorESP = async (id, group_id, rack_id, bin_id, color) => {
   addToQueue(id, request);
 };
 
-const updatePushScheduleESP = (id, group_id, rack_id, bin_id, new_schedule_time, color) => {
+const updatePushScheduleESP = (
+  id,
+  group_id,
+  rack_id,
+  bin_id,
+  new_schedule_time,
+  color
+) => {
   var ip = readStaticIP(id);
-  const normalizedColor = [normalize(color[0]), normalize(color[1]), normalize(color[2])];
+  const normalizedColor = [
+    normalize(color[0]),
+    normalize(color[1]),
+    normalize(color[2]),
+  ];
   const request = {
     ip: ip,
     data: {
@@ -732,7 +750,7 @@ const updateADDRackESP = (id, group_id, new_rack_id, mac) => {
   addToQueue(id, request);
 };
 
-const updateADDGroupESP = (id,new_group_id) => {
+const updateADDGroupESP = (id, new_group_id) => {
   var ip = readStaticIP(id);
   const request = {
     ip: ip,

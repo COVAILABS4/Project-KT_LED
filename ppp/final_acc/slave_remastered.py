@@ -4,8 +4,8 @@ from neopixel import NeoPixel
 import ujson
 import network
 import espnow
-import _thread 
-import sys
+import _thread
+ 
 global_time = "00:00:00"
 bins = []
 message_queue = []  # Initialize the queue for messages
@@ -33,7 +33,15 @@ def send_request():
         print("Sent request for time")
         time.sleep(1)
     
-
+def init_espnow():
+    sta = network.WLAN(network.STA_IF)
+    sta.active(True)
+    sta.disconnect()
+    print("WiFi and ESP-NOW initialized.")
+    
+    e = espnow.ESPNow()
+    e.active(True)
+    return e
 
 def read_config():
     print("Reading JSON configuration...")
@@ -146,6 +154,61 @@ class Bin:
         print(f"Message enqueued: {msg}")
 
 
+# Function to read the JSON data from the file
+def read_schedule_data(file_path):
+    try:
+        with open(file_path, 'r') as file:
+            return ujson.load(file)
+    except Exception:
+        # If the file doesn't exist, return an empty structure
+        return {}
+
+# Function to write the JSON data to the file
+def write_schedule_data(file_path, schedule_data):
+    with open(file_path, 'w') as file:
+        ujson.dump(schedule_data, file)
+
+def change_enabled_state(file_path, index, schedule_time, current_enabled_state):
+    schedule_data = read_schedule_data(file_path)
+    
+    # print(schedule_data)
+    hour = schedule_time.split(":")[0]
+    minute = schedule_time.split(":")[1]
+    minute_tens = str(int(minute) // 10)
+
+    print(schedule_data[hour][minute_tens])
+    if hour in schedule_data and minute_tens in schedule_data[hour]:
+        for schedule in schedule_data[hour][minute_tens]:
+            if schedule["index"] == index and schedule["scheduleTime"] == schedule_time:
+                schedule["enabled"] = not current_enabled_state
+                write_schedule_data(file_path, schedule_data)
+                return schedule_data
+    return "Not Found"
+
+# Function to add a schedule
+def add_schedule(file_path, index, schedule_time, color, enabled):
+    schedule_data = read_schedule_data(file_path)
+    hour = schedule_time.split(":")[0]
+    minute = schedule_time.split(":")[1]
+    minute_tens = str(int(minute) // 10)
+
+    if hour not in schedule_data:
+        schedule_data[hour] = {str(i): [] for i in range(6)}
+    
+    if minute_tens not in schedule_data[hour]:
+        schedule_data[hour][minute_tens] = []
+    
+    new_schedule = {
+        "index": index,
+        "scheduleTime": schedule_time,
+        "color": color,
+        "enabled": enabled
+    }
+    
+    schedule_data[hour][minute_tens].append(new_schedule)
+    write_schedule_data(file_path, schedule_data)
+    return schedule_data
+
 def insert_schedule(schedules, new_schedule):
     # Convert the time strings to tuples of (hour, minute) for comparison
     new_time = tuple(map(int, new_schedule['time'].split(":")))
@@ -191,6 +254,8 @@ def handle_push_message(msg_data, config, rack_id):
                 ujson.dump(config, f)
             print("Schedule updated and saved to file")
             
+            add_schedule("sch.json", bin_index, schedule_time, color, True)
+
             break
 
 def handle_color_change_message(msg_data, config, rack_id):
@@ -271,9 +336,8 @@ def handle_add_rack(msg_data):
     with open('sch.json', 'w') as f:
         ujson.dump({}, f)
         print("write Success2")
-    machine.reset()
     time.sleep(1)
-
+    main()
 
 def handle_enable_change_message(msg_data, config, rack_id):
     global bins
@@ -305,7 +369,7 @@ def handle_schedule_enable_change_message(msg_data, config, rack_id):
     config['bins'][bin_index]['schedules'][scheduled_index]['enabled'] = not current_enabled_status
     with open('slave.json', 'w') as f:
         ujson.dump(config, f)
-    
+    change_enabled_state("sch.json", bin_index, config['bins'][bin_index]['schedules'][scheduled_index]['time'], current_enabled_status)
     print("schedule enabled status changed and saved to file") 
 
 def handle_remove_rack(msg_data):
@@ -323,7 +387,7 @@ def handle_remove_rack(msg_data):
         {
             "color":[0, 0, 0],
             "led_pin": led_pins[i],
-            "bin_id": f"0{i+1}",
+            "bin_id": f"{""}_0{i+1}",
             "button_pin": button_pins[i],
             "enabled": True,
             "schedules": [],
@@ -332,7 +396,9 @@ def handle_remove_rack(msg_data):
         for i in range(bin_count)
     ]
     
-
+    
+    print("nnnnnnnnnnnnnnnnnn")
+    print(new_rack)
     with open('slave.json', 'w') as f:
         ujson.dump(new_rack, f)
         print("write Success")
@@ -340,7 +406,7 @@ def handle_remove_rack(msg_data):
         ujson.dump({}, f)
         print("write Success2")
     time.sleep(1)
-    machine.reset()
+    main()
 
 def handle_remove_schedule(msg_data):
     """
@@ -349,97 +415,98 @@ def handle_remove_schedule(msg_data):
     :param msg_data: A dictionary containing the 'bin_id' and 'schedule_time' to remove.
     """
     global bins
+    bin_id_to_modify = msg_data.get('bin_id')
+    schedule_time_to_remove = msg_data.get('schedule_time')
 
-    bin_id = msg_data['bin_id']
-    scheduled_time = msg_data['scheduled_time']
-
-    for bin in bins:
-            if bin['bin_id'] == bin_id:
-                original_schedules = bin.get('schedules', [])
-                
+    if bin_id_to_modify and schedule_time_to_remove:
+        for bin in bins:
+            if bin['bin_id'] == bin_id_to_modify:
                 # Filter out the schedule with the specified time
-                updated_schedules = [schedule for schedule in original_schedules if schedule['time'] != scheduled_time]
+                bin['schedules'] = [schedule for schedule in bin['schedules'] if schedule['time'] != schedule_time_to_remove]
                 
-                if len(original_schedules) > len(updated_schedules):
-                    # Update the bin schedules in config and bins
-                    bin['schedules'] = updated_schedules
-                    config['bins'] = bins
-                    
-                    # Write updated data back to slave.json
-                    with open('slave.json', 'w') as f:
-                        ujson.dump(config, f)
-                    print(f"Schedule at {scheduled_time} removed from bin {bin_id} and saved to file.")
-                else:
-                    print(f"No schedule found at {scheduled_time} for bin {bin_id}.")
+                # Update the 'slave.json' file with the modified bin schedule
+                with open('slave.json', 'w') as f:
+                    ujson.dump({"bins": bins}, f)
+                    print(f"Schedule {schedule_time_to_remove} removed from bin {bin_id_to_modify} and saved to file.")
                 break
-def espnow_listener(e,config, rack_id):
-    global bins, message_queue, avail, rtc, global_time
-    print("F1")
-    while True:
-        try:
-            if e is None:
-                print("ESP-NOW instance not initialized.")
-                time.sleep(1)
-                continue
+        else:
+            print(f"No bin found with 'bin_id': {bin_id_to_modify}")
+    else:
+        print("No 'bin_id' or 'schedule_time' specified in message data for removal.")
 
-            host, msg = e.recv()
-            if msg:
-                print(f"Received message from {host}: {msg}")
-                if not print("F2") and msg == b'avail':
-                    avail = True
-                    send_messages_from_queue()
-                    continue
 
-                elif not print("F3") and msg == b'unavail':
-                    avail = False
-                    print("Availability set to False")
-                    continue
-                elif not print("F4") and "999999" in msg:
-                    print("Received message from peer:", msg)
-                    global_time = msg.decode()
-                    hour, minute, second, dummy = map(int, global_time.split(":"))
-                    rtc.datetime((2024, 8, 3, 6, hour, minute, second, 0))
-                    continue
+# def espnow_listener(config, rack_id):
+#     global e, bins, message_queue, avail, rtc, global_time
+#     print("F1")
+#     while True:
+#         try:
+#             if e is None:
+#                 print("ESP-NOW instance not initialized.")
+#                 time.sleep(1)
+#                 continue
 
-                try:
-                    print("F4")
-                    msg_data = ujson.loads(msg)
-                    operation = msg_data.get('operation')
-                    print("F5")
-                    if not print("F6") and operation == 'push':
-                        handle_push_message(msg_data, config, rack_id)
+#             host, msg = e.recv()
+#             if msg:
+#                 print(f"Received message from {host}: {msg}")
+#                 if not print("F2") and msg == b'avail':
+#                     avail = True
+#                     send_messages_from_queue()
+#                     continue
 
-                    elif operation == 'color-change':
-                        handle_color_change_message(msg_data, config, rack_id)
-                    elif operation == 'click-change':
-                        handle_click_change_message(msg_data, config, rack_id)
-                    elif operation == 'enable-change':
-                        handle_enable_change_message(msg_data, config, rack_id)
-                    elif operation == 'schedule-change':
-                        handle_schedule_enable_change_message(msg_data, config, rack_id)
-                    elif operation == 'add-rack':
-                        handle_add_rack(msg_data)
-                    elif operation == 'remove-rack':
-                        handle_remove_rack(msg_data)
-                    elif operation == 'remove-schedule':
-                        handle_remove_schedule(msg_data)
-                    else:
-                        print(f"Unknown operation: {operation}")
+#                 elif not print("F3") and msg == b'unavail':
+#                     avail = False
+#                     print("Availability set to False")
+#                     continue
+#                 elif not print("F4") and "999999" in msg:
+#                     print("Received message from peer:", msg)
+#                     global_time = msg.decode()
+#                     hour, minute, second, dummy = map(int, global_time.split(":"))
+#                     rtc.datetime((2024, 8, 3, 6, hour, minute, second, 0))
+#                     continue
 
-                    try:
-                        e.add_peer(host)
-                    except Exception:
-                        print("Already added.")
-                except Exception as err:
-                    print(f"Unexpected error processing message: {msg}. Error: {err}")
-            else:
-                print("No message received.")
+#                 try:
+#                     print("F4")
+#                     msg_data = ujson.loads(msg)
+#                     operation = msg_data.get('operation')
+#                     print("F5")
+#                     if not print("F6") and operation == 'push':
+#                         handle_push_message(msg_data, config, rack_id)
 
-        except Exception as err:
-            print(f"Error receiving message: {err}")
-            
+#                     elif operation == 'color-change':
+#                         handle_color_change_message(msg_data, config, rack_id)
+#                     elif operation == 'click-change':
+#                         handle_click_change_message(msg_data, config, rack_id)
+#                     elif operation == 'enable-change':
+#                         handle_enable_change_message(msg_data, config, rack_id)
+#                     elif operation == 'schedule-change':
+#                         handle_schedule_enable_change_message(msg_data, config, rack_id)
+#                     elif operation == 'add-rack':
+#                         handle_add_rack(msg_data)
+#                     elif operation == 'remove-rack':
+#                         handle_add_rack(msg_data)
+#                     elif operation == 'remove-schedule':
+#                         handle_remove_schedule(msg_data)
+#                     else:
+#                         print(f"Unknown operation: {operation}")
 
-        time.sleep(1)  # Minimal delay to keep the system running
+#                     try:
+#                         e.add_peer(host)
+#                     except Exception:
+#                         print("Already added.")
+#                 except Exception as err:
+#                     print(f"Unexpected error processing message: {msg}. Error: {err}")
+#             else:
+#                 print("No message received.")
+
+#         except Exception as err:
+#             print(f"Error receiving message: {err}")
+#             e = init_espnow()
+#             try:
+#                 e.add_peer(master_mac)
+#             except Exception:
+#                 print("Already added.")
+
+#         time.sleep(1)  # Minimal delay to keep the system running
  
 def send_messages_from_queue():
     global message_queue, e ,master_mac
@@ -454,25 +521,63 @@ def send_messages_from_queue():
             print("Already added.")
         e.send(bytes(master_mac), msg)
         print(f"Sent message from queue to {master_mac}: {msg}")
+
+
 config, master_mac, rack_id, e = None, None, None, None
 
+def main():
+    global config, master_mac, rack_id, e, bins, message_queue
+    global rtc,global_time
+    config = read_config()
+    master_mac = config['master']
+    rack_id = config['rack_id']
 
-def update_time_from_peer():
-    global global_time, received_flag
-    _thread.start_new_thread(send_request, ())
+    e = init_espnow()
+
+
+    try:
+        e.add_peer(master_mac)
+    except Exception:
+        print("Already added.")
     
-    while not received_flag:
-        host, msg = e.recv()
-        
-        if msg:
-            print("Received message from peer:", msg)
-            global_time = msg.decode()
-            received_flag = True
-            hour, minute, second , dummy = map(int, global_time.split(":"))
-            rtc.datetime((2024, 8, 3, 6, hour, minute, second, 0))
-            return
-        else:
-            print("No response received, retrying...")
+    
+    # _thread.start_new_thread(espnow_listener, (config, rack_id))
+   
+    bins = [Bin(bin_config, i, rack_id, e, master_mac) for i, bin_config in enumerate(config['bins'])]
+
+
+
+    bins[0].color = (64,0,0)
+    bins[0].change_led_color()
+    time.sleep(0.5)
+
+    bins[0].color = (0,64,0)
+    bins[0].change_led_color()
+    time.sleep(0.5)
+
+    bins[0].color = (0,0,64)
+    bins[0].change_led_color()
+    time.sleep(0.5)
+    bins[0].color = (0,0,0)
+    bins[0].change_led_color()
+    time.sleep(0.5)
+    for i in bins:
+        i.color = (0,0,0)
+        i.change_led_color()
+
+
+
+    global_time = "09:59:00"
+
+
+    hour, minute, second = map(int, global_time.split(":"))
+
+
+
+    rtc.datetime((2024, 8, 3, 6, hour, minute, second, 0))
+    time.sleep(2)
+    schedule_checker()
+    
 
 def get_data():
     data = []
@@ -509,82 +614,23 @@ def schedule_checker():
                     bins[index].change_led_color()
                     bin['clicked'] = False
         time.sleep(60)
-e = None
-config = {}
-master_mac
 
-try:
-    config = read_config()
+def set_default_color():
+    pins = [12, 25, 26, 27]
+    neopixels = [NeoPixel(machine.Pin(pin), 10) for pin in pins]
+    for np in neopixels:
+        for i in range(np.n):
+            np[i] = (0, 0, 0)  # Set each LED to (0, 0, 0)
+        np.write()  # Update the LEDs with the new color
 
-    time.sleep(3)
-    master_mac = config['master']
-    time.sleep(3)
-    rack_id = config['rack_id']
-    time.sleep(3)
+set_default_color()
+
+if __name__ == "__main__":    
+    
+    main()
 
 
     
-
-    sta = network.WLAN(network.STA_IF)
-    sta.active(True)
-    print("WiFi and ESP-NOW initialized.")
-    
-    e = espnow.ESPNow()
-    e.active(True)
-
-    time.sleep(3)
-
-
-    try:
-        if master_mac:
-            e.add_peer(master_mac)
-        else:
-            pass
-        time.sleep(3)
-    except Exception  as err:
-        print("Already added." , err)
-
-    time.sleep(3)
-
-    _thread.start_new_thread(espnow_listener, (e,config, rack_id))
-
-    bins = [Bin(bin_config, i, rack_id, e, master_mac) for i, bin_config in enumerate(config['bins'])]
-
-
-    if bins:
-        bins[0].color = (64,0,0)
-        bins[0].change_led_color()
-        time.sleep(0.5)
-
-        bins[0].color = (0,64,0)
-        bins[0].change_led_color()
-        time.sleep(0.5)
-
-        bins[0].color = (0,0,64)
-        bins[0].change_led_color()
-        time.sleep(0.5)
-        bins[0].color = (0,0,0)
-        bins[0].change_led_color()
-        time.sleep(0.5)
-        for i in bins:
-            i.color = (0,0,0)
-            i.change_led_color()
-        hour, minute, second = map(int, global_time.split(":"))
-        rtc.datetime((2024, 8, 3, 6, hour, minute, second, 0))
-        time.sleep(2)
-        schedule_checker()
-    
-
-
-except Exception as err:
-    print(err)
-
-    machine.reset()
-
-    
-
-
-
 
 
 

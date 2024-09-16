@@ -12,14 +12,14 @@ import ujson
 from ds3231 import DS3231
 
 e = None
-# data = []
+data = []
 wlan_mac = None;
 
 server_ip = "192.168.65.83"
 
 KIT_NO = 1
 
-SERVER_NO = 255
+SERVER_NO = 103
 
 # Define I2C pins for SDA and SCL
 sda_pin = machine.Pin(21)
@@ -44,23 +44,6 @@ relay = machine.Pin(relay_pin, machine.Pin.OUT)
 
 # Shared state for buzzer and relay management
 active_bins = [] 
-
-def get_data():
-    data = []
-    with open("data.json", 'r') as f:
-        data= json.load(f)
-    
-    return data;
-
-
-def set_data(new_data):
-    # data = []
-    with open('data.json', 'w') as f:
-        json.dump(new_data, f)
-    
-    # return data;
-
-
 
 def connect_to_wifi(ssid, password):
     """Connect to the Wi-Fi network and handle IP extraction and modification."""
@@ -200,6 +183,16 @@ class Bin:
         update_data_json_from_message(msg)
         print(f"Sent message to : {msg}")
 
+
+def load_json_data(file_path):
+    try:
+        with open(file_path, 'r') as f:  
+            new_data= json.load(f)
+            return new_data
+    except Exception as err:
+        print("Error loading JSON data:", err)
+        raise
+
 current_group_id,current_rack,group_index = None , None , None
 def load_json_rack(data,mac):
     global current_group_id,current_rack,group_index;
@@ -224,30 +217,14 @@ def config_all(config):
     for i, bin_config in enumerate(config['bins']):
         bins.append(Bin(bin_config, i, config['rack_id']))
         print(f"Bin {i + 1} Configured")
-    bins[0].color = (64,0,0)
-    bins[0].change_led_color()
-    time.sleep(0.5)
 
-    bins[0].color = (0,64,0)
-    bins[0].change_led_color()
-    time.sleep(0.5)
-
-    bins[0].color = (0,0,64)
-    bins[0].change_led_color()
-    time.sleep(0.5)
-    bins[0].color = (0,0,0)
-    bins[0].change_led_color()
-    time.sleep(0.5)
-    for i in bins:
-        i.color = (0,0,0)
-        i.change_led_color()
     print("All bins initialized and ready.")
 
 
 receive_thread_soc = None
 
 def start_server():
-    global server_ip;
+    global server_ip
     s = None
     try:
         addr = socket.getaddrinfo(server_ip, 8000)[0][-1]
@@ -406,7 +383,9 @@ def insert_schedule(schedules, new_schedule):
 def update_local_json_schedule(group_id, rack_id, bin_id, new_schedule_time, color):
     try:
         # Open the data.json file and load the content
-        data = get_data()
+        data = []
+        with open('data.json', 'r') as f:
+            data = json.load(f)
 
         for group in data:
             if group['Group_id'] == group_id:
@@ -425,7 +404,8 @@ def update_local_json_schedule(group_id, rack_id, bin_id, new_schedule_time, col
                                 bin['schedules'] = insert_schedule(bin['schedules'], new_schedule)
 
                                 # Write the updated data back to the JSON file
-                                set_data(data)
+                                with open('data.json', 'w') as f:
+                                    json.dump(data, f)  # Use indent for readability
 
                                 print("Local JSON updated successfully")
                                 mac = bytes(rack['mac'])
@@ -437,10 +417,8 @@ def update_local_json_schedule(group_id, rack_id, bin_id, new_schedule_time, col
 
 # Function to update local JSON data for color change
 def update_local_json_color(group_id, rack_id, bin_id, color):
-    # print("DDD",data)
+    print("DDD",data)
     global current_group_id,current_rack,bins
-
-    data = get_data()
     try:
         for group in data:
             print("DDD1")
@@ -453,7 +431,8 @@ def update_local_json_color(group_id, rack_id, bin_id, color):
                             if bin['bin_id'] == bin_id:
                                 curr_index = rack['bins'].index(bin)
                                 bin['color'] = color
-                                set_data(data)
+                                with open('data.json', 'w') as f:
+                                    json.dump(data, f)
                                 if group_id==current_group_id and rack_id==current_rack['rack_id']:   
                                     bins[curr_index].color = color
                                     bins[curr_index].change_led_color()
@@ -466,8 +445,6 @@ def update_local_json_color(group_id, rack_id, bin_id, color):
 
 # Function to update local JSON data for click change
 def update_local_json_click(group_id, rack_id, bin_id):
-
-    data = get_data()
     try:
         for group in data:
             if group['Group_id'] == group_id:
@@ -476,7 +453,8 @@ def update_local_json_click(group_id, rack_id, bin_id):
                         for bin in rack['bins']:
                             if bin['bin_id'] == bin_id:
                                 bin['clicked'] = True
-                                set_data(data)
+                                with open('data.json', 'w') as f:
+                                    json.dump(data, f)
                                 print("Local JSON updated successfully")
                                 mac = bytes(rack['mac'])
                                 return mac, rack['bins'].index(bin)
@@ -486,7 +464,6 @@ def update_local_json_click(group_id, rack_id, bin_id):
 
 
 def update_local_json_enabled(group_id, rack_id, bin_id):
-    data = get_data()
     try:
         for group in data:
             if group['Group_id'] == group_id:
@@ -495,7 +472,8 @@ def update_local_json_enabled(group_id, rack_id, bin_id):
                         for bin in rack['bins']:
                             if bin['bin_id'] == bin_id:
                                 bin['enabled'] = not bin['enabled']
-                                set_data(data)
+                                with open('data.json', 'w') as f:
+                                    json.dump(data, f)
                                 print("Local JSON updated successfully")
                                 mac = bytes(rack['mac'])
                                 return mac, rack['bins'].index(bin)
@@ -505,7 +483,6 @@ def update_local_json_enabled(group_id, rack_id, bin_id):
 
 def update_local_json_schedule_enabled(group_id, rack_id, bin_id,scheduled_index,current_enabled_status):
     global current_group_id,current_rack,bins
-    data = get_data()
     try:
         for group in data:
             if group['Group_id'] == group_id:
@@ -514,7 +491,8 @@ def update_local_json_schedule_enabled(group_id, rack_id, bin_id,scheduled_index
                         for bin in rack['bins']:
                             if bin['bin_id'] == bin_id:
                                 bin['schedules'][scheduled_index]['enabled'] = not current_enabled_status
-                                set_data(data)
+                                with open('data.json', 'w') as f:
+                                    json.dump(data, f)
                                 print("Local JSON updated successfully")
                                 mac = bytes(rack['mac'])
                                 return mac, rack['bins'].index(bin)
@@ -525,7 +503,8 @@ def update_local_json_schedule_enabled(group_id, rack_id, bin_id,scheduled_index
 def update_local_json_remove_schedule(group_id, rack_id, bin_id, scheduled_index):
     try:
         # Load the JSON data from the file
-        data = set_data()
+        with open('data.json', 'r') as f:
+            data = json.load(f)
 
         for group in data:
             if group['Group_id'] == group_id:
@@ -542,7 +521,8 @@ def update_local_json_remove_schedule(group_id, rack_id, bin_id, scheduled_index
                                     return False
 
         # Write the updated data back to the JSON file
-        set_data(data)
+        with open('data.json', 'w') as f:
+            json.dump(data, f)
 
         print("Local JSON updated successfully after removing the schedule.")
         return True
@@ -554,7 +534,6 @@ def update_local_json_remove_schedule(group_id, rack_id, bin_id, scheduled_index
 def update_local_json_add_rack(group_id, new_rack_id, mac):
     global wlan_mac
     
-    data = get_data()
     print("WEEWEWE",wlan_mac)
     try:
         for group in data:
@@ -578,7 +557,7 @@ def update_local_json_add_rack(group_id, new_rack_id, mac):
 
                 new_rack['bins'] = [
                     {
-                        "color": [0,0,0],
+                        "color": [1,1,1],
                         "led_pin": led_pins[i],
                         "bin_id": f"{new_rack_id}_0{i+1}",
                         "button_pin": button_pins[i],
@@ -596,7 +575,8 @@ def update_local_json_add_rack(group_id, new_rack_id, mac):
                 
                 group['racks'].append(new_rack)
 
-                set_data(data)
+                with open('data.json', 'w') as f:
+                    json.dump(data, f)
                 
                 print(group['racks'][0]['mac'])
                 print("Local JSON updated successfully with new rack")
@@ -606,9 +586,10 @@ def update_local_json_add_rack(group_id, new_rack_id, mac):
     return None, None
 
 def update_local_json_remove_rack(group_id, rack_id):
-
-    data = get_data()
     try:
+        # Load the JSON data from the file
+        with open('data.json', 'r') as f:
+            data = json.load(f)
 
         for group in data:
             if group['Group_id'] == group_id:
@@ -631,8 +612,6 @@ def handle_operation(rec_data):
     
     global wlan_mac,current_group_id,current_rack,group_index;
     # global ;
-
-    data = get_data()
     print(wlan_mac)
     print("COMMING")
     print(rec_data)
@@ -647,7 +626,8 @@ def handle_operation(rec_data):
                     "racks": []      
                 }
             ]
-        set_data(new_data)
+        with open('data.json', 'w') as f:
+            json.dump(new_data, f)
         current_group_id = new_group_id
         current_rack = ""
         group_index = 0
@@ -659,7 +639,8 @@ def handle_operation(rec_data):
                     "racks": []      
                 }
             ]
-        set_data(new_data)
+        with open('data.json', 'w') as f:
+            json.dump(new_data, f)
         current_group_id = ""
         current_rack = ""
         group_index = 0
@@ -933,7 +914,7 @@ def update_data_json_from_message(msg):
             'color' : color_arr
         })
         # if isAvail:
-            # process_notification_queue()
+           # process_notification_queue()
     except Exception as err:
         print(f"Error updating JSON from message: {err}")
 
@@ -963,9 +944,9 @@ def process_notification_queue():
                 response.close()
 
 def loaders():
-    data = get_data()
+    global data
+    data = load_json_data('data.json')
     load_json_rack(data,wlan_mac)
-    data = None
 
 SSID = 'ACTFIBERNET'
 PASSWORD = 'act12345'
@@ -1053,8 +1034,6 @@ def sent_time():
     sta = network.WLAN(network.STA_IF)
     sta.active(True)
     print()
-
-    data = get_data()
     for rack in data[0]['racks'][1:]:
         rc_mac = bytes(rack['mac'])
         rtc_time = rtc.get_time()
@@ -1068,8 +1047,6 @@ def sent_time():
 
 def notify_slave(messing):
     global e,sta;
-
-    data = get_data()
     
     print()
     for rack in data[0]['racks'][1:]:
@@ -1178,6 +1155,13 @@ def check_switch_state():
         time.sleep(50 if curr_state == 1 else 0.1)
 
 
+def get_data():
+    data = []
+    with open("data.json", 'r') as f:
+        data= json.load(f)
+    
+    return data;
+
 
 def check_and_update_buzzer_relay():
     """ Check the state of all bins and control buzzer and relay accordingly. """
@@ -1197,7 +1181,7 @@ def check_and_update_buzzer_relay():
 
 def schedule_checker():
     print("Called")
-    global  rtc, bins,current_rack
+    global data, rtc, bins,current_rack
     while True:
         data = get_data()
         if not data:
@@ -1228,14 +1212,18 @@ def schedule_checker():
         check_and_update_buzzer_relay()  # Check and update the buzzer and relay status based on active bins
         time.sleep(60)  # Check every minute
 
-
+with open("data.json", 'r') as f:
+    data= json.load(f)
 loaders()
 
 load_queues_from_backup()
 
 
+
+
 _thread.start_new_thread(schedule_checker, ())
 check_switch_state()
+
 
 
 

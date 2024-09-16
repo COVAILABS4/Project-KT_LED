@@ -38,7 +38,7 @@ const Import = ({ fetchData }) => {
         setExcelData(dataForSpreadsheet);
 
         // Calculate delay time based on the number of rows in the Excel sheet
-        setDelay(json.length * 1000 + 5000); // rows count + 5 seconds
+        // setDelay(json.length * 1000 + 5000); // rows count + 5 seconds
       };
       reader.readAsArrayBuffer(files);
     }

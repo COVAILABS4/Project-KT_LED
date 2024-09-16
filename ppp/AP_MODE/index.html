@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ESP32 Configuration</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background-color: #f4f4f9;
+        color: #333;
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .container {
+        background-color: #ffffff;
+        padding: 30px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 100%;
+        max-width: 600px;
+        transition: transform 0.3s;
+      }
+      .container:hover {
+        transform: scale(1.02);
+      }
+      h2 {
+        margin: 0 0 20px 0;
+        color: #007bff;
+        font-size: 24px;
+        text-align: center;
+      }
+      .form-group {
+        margin-bottom: 15px;
+      }
+      label {
+        font-weight: bold;
+        display: block;
+        margin-bottom: 5px;
+      }
+      input[type="text"],
+      input[type="password"] {
+        width: calc(100% - 20px);
+        padding: 12px;
+        margin: 0;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 16px;
+      }
+      input[type="submit"] {
+        width: 100%;
+        background-color: #007bff;
+        color: white;
+        padding: 12px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        transition: background-color 0.3s;
+      }
+      input[type="submit"]:hover {
+        background-color: #0056b3;
+      }
+      .toggle-edit {
+        background-color: #f1f1f1;
+        color: #007bff;
+        text-align: center;
+        padding: 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-bottom: 20px;
+        font-size: 16px;
+        transition: background-color 0.3s, color 0.3s;
+      }
+      .toggle-edit:hover {
+        background-color: #e9ecef;
+        color: #0056b3;
+      }
+      .display-value {
+        display: inline-block;
+        width: calc(100% - 20px);
+        padding: 12px;
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 16px;
+        background-color: #f8f9fa;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>ESP32 Configuration</h2>
+      <div class="toggle-edit" onclick="toggleEdit()">Toggle Edit Mode</div>
+      <form action="/update" method="post" id="configForm">
+        <div class="form-group">
+          <label for="KIT_NO_input">KIT_NO:</label>
+          <span class="display-value" id="KIT_NO_display">{{KIT_NO}}</span>
+          <input
+            type="text"
+            name="KIT_NO"
+            value="{{KIT_NO}}"
+            id="KIT_NO_input"
+            style="display: none"
+          />
+        </div>
+        <div class="form-group">
+          <label for="STATIC_NO_input">STATIC_NO:</label>
+          <span class="display-value" id="STATIC_NO_display"
+            >{{STATIC_NO}}</span
+          >
+          <input
+            type="text"
+            name="STATIC_NO"
+            value="{{STATIC_NO}}"
+            id="STATIC_NO_input"
+            style="display: none"
+          />
+        </div>
+        <div class="form-group">
+          <label for="SERVER_NO_input">SERVER_NO:</label>
+          <span class="display-value" id="SERVER_NO_display"
+            >{{SERVER_NO}}</span
+          >
+          <input
+            type="text"
+            name="SERVER_NO"
+            value="{{SERVER_NO}}"
+            id="SERVER_NO_input"
+            style="display: none"
+          />
+        </div>
+        <div class="form-group">
+          <label for="SSID_input">SSID:</label>
+          <span class="display-value" id="SSID_display">{{SSID}}</span>
+          <input
+            type="text"
+            name="SSID"
+            value="{{SSID}}"
+            id="SSID_input"
+            style="display: none"
+          />
+        </div>
+        <div class="form-group">
+          <label for="PASSWORD_input">PASSWORD:</label>
+          <span class="display-value" id="PASSWORD_display">{{PASSWORD}}</span>
+          <input
+            type="password"
+            name="PASSWORD"
+            value="{{PASSWORD}}"
+            id="PASSWORD_input"
+            style="display: none"
+          />
+        </div>
+        <input
+          type="submit"
+          value="Save"
+          id="submit_button"
+          style="display: none"
+        />
+      </form>
+    </div>
+    <script>
+      function toggleEdit() {
+        var isEditing =
+          document.getElementById("KIT_NO_input").style.display === "block";
+
+        var elements = ["KIT_NO", "STATIC_NO", "SERVER_NO", "SSID", "PASSWORD"];
+
+        elements.forEach(function (element) {
+          document.getElementById(element + "_display").style.display =
+            isEditing ? "block" : "none";
+          document.getElementById(element + "_input").style.display = isEditing
+            ? "none"
+            : "block";
+        });
+
+        document.getElementById("submit_button").style.display = isEditing
+          ? "none"
+          : "block";
+      }
+    </script>
+  </body>
+</html>

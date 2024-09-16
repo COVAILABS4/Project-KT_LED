@@ -15,11 +15,58 @@ e = None
 # data = []
 wlan_mac = None;
 
-server_ip = "192.168.65.83"
+server_ip = ""
 
 KIT_NO = 1
 
-SERVER_NO = 255
+STATIC_IP = 1
+
+
+SERVER_NO = 254
+
+SSID = 'ACTFIBERNET'
+PASSWORD = 'act12345'
+
+
+
+# Define file path
+config_file_path = '/config.json'
+
+def read_config(file_path):
+    """Reads JSON configuration from the specified file."""
+    try:
+        with open(file_path, 'r') as file:
+            config = ujson.load(file)
+            return config
+    except OSError:
+        # If file does not exist, return an empty dictionary
+        return {}
+
+# Read existing configuration
+Local = read_config(config_file_path)
+
+# Store configuration values in variables
+KIT_NO = Local.get("KIT_NO", "")
+STATIC_IP = Local.get("STATIC_NO", "")
+
+if STATIC_IP=="":
+    STATIC_IP = KIT_NO
+
+
+SERVER_NO = Local.get("SERVER_NO", 0)
+SSID = Local.get("SSID", "")
+PASSWORD = Local.get("PASSWORD", "")
+
+
+# Print variables
+print("KIT_NO =", KIT_NO)
+print("STATIC_NO =", STATIC_IP)
+print("SERVER_NO =", SERVER_NO)
+print("SSID =", SSID)
+print("PASSWORD =", PASSWORD)
+
+
+
 
 # Define I2C pins for SDA and SCL
 sda_pin = machine.Pin(21)
@@ -95,7 +142,7 @@ def connect_to_wifi(ssid, password):
     
     # Construct new IP address
     if len(ip_parts) == 4:
-        new_ip_address = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.{KIT_NO}"
+        new_ip_address = f"{ip_parts[0]}.{ip_parts[1]}.{ip_parts[2]}.{STATIC_IP}"
         print(f"New IP address to be set: {new_ip_address}")
         
 
@@ -967,8 +1014,7 @@ def loaders():
     load_json_rack(data,wlan_mac)
     data = None
 
-SSID = 'ACTFIBERNET'
-PASSWORD = 'act12345'
+
 wlan_mac = get_mac()
 
 # Thread and control variables
@@ -1087,44 +1133,113 @@ def notify_slave(messing):
         print("Notified")
 
 def check_switch_state():
-    global SSID, PASSWORD, threadss, switch_pin, e
+    global SSID, PASSWORD, threadss, switch_pin, e,sta
     prev_state = switch_pin.value()
     isFirst = True
     offline_toggled = False
 
+    def AP_MODE():
+        def setup_access_point():
+            ap = network.WLAN(network.AP_IF)
+            ap.active(True)
+            ap.config(essid='ESP32-AP', password='12345678', channel=1, authmode=network.AUTH_WPA_WPA2_PSK)
+            while not ap.active():
+                time.sleep(1)
+            print('AP Mode configured:', ap.ifconfig())
+        setup_access_point()
+
+        # Load configuration from file
+        def load_config():
+            try:
+                with open('config.json', 'r') as f:
+                    return json.load(f)
+            except:
+                return {"KIT_NO": "", "STATIC_NO": "", "SERVER_NO": "", "SSID": "", "PASSWORD": ""}
+
+        # Save configuration to file
+        def save_config(config):
+            with open('config.json', 'w') as f:
+                json.dump(config, f)
+        
+        # Replace placeholders in HTML with actual config values
+        def render_html(template, config):
+            for key, value in config.items():
+                template = template.replace('{{' + key + '}}', value)
+            return template
+        # HTTP response handler
+        def handle_request(client, config):
+            request = client.recv(1024).decode('utf-8')
+            if 'POST /update' in request:
+                body = request.split('\r\n\r\n')[1]
+                params = {k: v for k, v in [param.split('=') for param in body.split('&')]}
+                config.update(params)
+                save_config(config)
+                response = 'HTTP/1.1 303 See Other\r\nLocation: /\r\n\r\n'
+                client.send(response.encode('utf-8'))
+            else:
+                with open('index.txt', 'r') as f:
+                    html = f.read()
+                response = render_html(html, config)
+                client.send('HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n'.encode('utf-8'))
+                client.send(response.encode('utf-8'))
+
+        # Start web server
+        # def start_server():
+        #     config = load_config()
+        #     addr = socket.getaddrinfo('0.0.0.0', 80)[0][-1]
+        #     s = socket.socket()
+        #     s.bind(addr)
+        #     s.listen(1)
+        #     print('Web server running on http://0.0.0.0:80')
+
+        #     while True:
+        #         client, addr = s.accept()
+        #         print('Client connected from', addr)
+        #         handle_request(client, config)
+        #         client.close()
+        def start_server_AP():
+            config = load_config()
+            addr = socket.getaddrinfo("0.0.0.0", 80)[0][-1]  # Bind to all available network interfaces on port 8000
+
+            try:
+                s_ap = socket.socket()
+                # s_ap.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                try:
+
+                    s_ap.bind(addr)
+                except Exception:
+                    pass
+                s_ap.listen(5)  # Start listening for incoming connections
+                print('Web server running on http://0.0.0.0')
+            except OSError as err:
+                print("Socket error:", err)
+                return
+
+            while True:
+                try:
+                    client, addr = s_ap.accept()
+                    print('Client connected from', addr)
+                    print("SSSSSSSSSSS-2")
+                    handle_request(client, config)
+                    print("SSSSSSSSSSS-3")
+                    client.close()
+                except OSError as err:
+                    print("Error while handling client:", err)
+
+                print("SDSD")
+        start_server_AP()
+    
     while True:
         curr_state = switch_pin.value()
 
         if curr_state != prev_state or isFirst:
             isFirst = False
-            if curr_state == 0:  # Switch ON state
-                print("Switch ON")
-                
-                # Handle only the online state
-                if e is None:
-                    init_esp_now()
-                    time.sleep(2)
-                    notify_slave("unavail")
-                
-                connect_to_wifi(SSID, PASSWORD)
-                time.sleep(2)
-
-                if threadss is not None:
-                    threadss = None
-
-                time.sleep(2)
-                try:  
-                    threadss = _thread.start_new_thread(start_server, ())
-                except Exception:
-                    check_and_reset()
-
-                print(f"Thread started: {threadss}")
-                time.sleep(2)
-                push_req()
-
-                time.sleep(2)
-                process_notification_queue()
-
+            if curr_state == 0:
+            # Set up access point
+    
+                  # Switch ON state
+                AP_MODE() 
+                #_thread.start_new_thread(AP_MODE, ())
             else:  # Switch OFF state
                 print("Switch OFF - Initial State")
                 offline_toggled = False  # Reset toggle when the switch is first turned off
@@ -1234,8 +1349,95 @@ loaders()
 load_queues_from_backup()
 
 
-_thread.start_new_thread(schedule_checker, ())
+
+
+
+# # Load configuration from file
+# def load_config():
+#     try:
+#         with open('config.json', 'r') as f:
+#             return json.load(f)
+#     except:
+#         return {"KIT_NO": "", "STATIC_NO": "", "SERVER_NO": "", "SSID": "", "PASSWORD": ""}
+
+# # Save configuration to file
+# def save_config(config):
+#     with open('config.json', 'w') as f:
+#         json.dump(config, f)
+
+# # Replace placeholders in HTML with actual config values
+# def render_html(template, config):
+#     for key, value in config.items():
+#         template = template.replace('{{' + key + '}}', value)
+#     return template
+
+# # HTTP response handler
+# def handle_request(client, config):
+#     receive = client.recv(1024).decode('utf-8')
+#     print("Request:", receive)
+    
+#     if 'Dalvik/2.1.0 (Linux; U; Android 12; RMX2170 Build/SKQ1.210216.001)' in receive:
+#         return
+
+#       # Debug: Print the received request
+#     if 'POST /update' in receive:
+#         body = receive.split('\r\n\r\n')[1]
+#         params = {k: v for k, v in [param.split('=') for param in body.split('&')]}
+#         config.update(params)
+#         save_config(config)
+#         response = 'HTTP/1.1 303 See Other\r\nLocation: /\r\n\r\n'
+#         client.send(response.encode('utf-8'))
+#     else:
+#         try:
+#             with open('index.txt', 'r') as f:
+#                 html = f.read()
+#             response = render_html(html, config)
+#             client.send('HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n'.encode('utf-8'))
+#             client.send(response.encode('utf-8'))
+#         except Exception as err:
+#             print(f"Error handling request: {err}")
+#             client.send('HTTP/1.1 500 Internal Server Error\r\n\r\n'.encode('utf-8'))
+
+
+# def start_server_AP():
+#     config = load_config()
+#     addr = socket.getaddrinfo("0.0.0.0", 80)[0][-1]  # Bind to all available network interfaces on port 8000
+
+#     try:
+#         s_ap = socket.socket()
+#         s_ap.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#         s_ap.bind(addr)
+#         s_ap.listen(5)  # Start listening for incoming connections
+#         print('Web server running on http://0.0.0.0')
+#     except OSError as err:
+#         print("Socket error:", err)
+#         check_and_reset()
+#         return
+
+#     while True:
+#         try:
+#             client, addr = s_ap.accept()
+#             print('Client connected from', addr)
+#             print("SSSSSSSSSSS-2")
+#             handle_request(client, config)
+#             print("SSSSSSSSSSS-3")
+#             client.close()
+#         except OSError as err:
+#             print("Error while handling client:", err)
+
+#         print("SDSD")
+    
+#     print("Server stopped")
+    
+
+
+
+#_thread.start_new_thread(schedule_checker, ())
 check_switch_state()
+
+
+
+
 
 
 

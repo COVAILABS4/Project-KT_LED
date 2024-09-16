@@ -24,94 +24,41 @@ def process_json_string(json_string):
 input_json_string = '''
  [
       {
-        "rack_id": "R1",
-        "mac": [
-          44,
-          188,
-          187,
-          5,
-          54,
-          236
-        ],
-        "device_id": "KT-4",
+        "rack_id": "RC-1",
+        "mac": [44, 188, 187, 5, 23, 36],
+        "device_id": "KT-1",
         "bins": [
           {
-            "color": [
-              255,
-              255,
-              255
-            ],
+            "color": [255, 255, 255],
             "led_pin": 12,
-            "bin_id": "R1_01",
+            "bin_id": "RC-1_01",
             "button_pin": 13,
-            "schedules": [
-              {
-                "time": "16:20",
-                "enabled": true,
-                "color": [
-                  255,
-                  0,
-                  0
-                ]
-              }
-            ],
+            "schedules": [],
             "enabled": true,
             "clicked": false
           },
           {
-            "color": [
-              255,
-              255,
-              255
-            ],
+            "color": [255, 255, 255],
             "led_pin": 25,
-            "bin_id": "R1_02",
+            "bin_id": "RC-1_02",
             "button_pin": 14,
-            "schedules": [
-              {
-                "time": "16:23",
-                "enabled": true,
-                "color": [
-                  0,
-                  0,
-                  255
-                ]
-              }
-            ],
+            "schedules": [],
             "enabled": true,
             "clicked": false
           },
           {
-            "color": [
-              255,
-              255,
-              255
-            ],
+            "color": [255, 255, 255],
             "led_pin": 26,
-            "bin_id": "R1_03",
+            "bin_id": "RC-1_03",
             "button_pin": 15,
-            "schedules": [
-              {
-                "time": "16:23",
-                "enabled": true,
-                "color": [
-                  255,
-                  0,
-                  255
-                ]
-              }
-            ],
+            "schedules": [],
             "enabled": true,
             "clicked": false
           },
           {
-            "color": [
-              255,
-              255,
-              255
-            ],
+            "color": [255, 255, 255],
             "led_pin": 27,
-            "bin_id": "R1_04",
+            "bin_id": "RC-1_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,
@@ -120,102 +67,126 @@ input_json_string = '''
         ]
       },
       {
-        "rack_id": "R2",
-        "master": [
-          44,
-          188,
-          187,
-          5,
-          54,
-          236
-        ],
-        "mac": [
-          44,
-          188,
-          187,
-          6,
-          42,
-          64
-        ],
-        "device_id": "KT-7",
+        "rack_id": "RC-2",
+        "master": [44, 188, 187, 5, 23, 36],
+        "mac": [44, 188, 187, 5, 53, 64],
+        "device_id": "KT-10",
         "bins": [
           {
-            "color": [
-              255,
-              255,
-              255
-            ],
+            "color": [255, 255, 255],
             "led_pin": 12,
-            "bin_id": "R2_01",
+            "bin_id": "RC-2_01",
             "button_pin": 13,
             "schedules": [
               {
-                "time": "10:12",
+                "time": "10:00",
                 "enabled": true,
-                "color": [
-                  255,
-                  0,
-                  255
-                ]
+                "color": [255, 0, 0]
+              },
+              {
+                "time": "10:05",
+                "enabled": true,
+                "color": [0, 0, 255]
+              },
+              {
+                "time": "10:10",
+                "enabled": true,
+                "color": [255, 255, 0]
+              },
+              {
+                "time": "10:15",
+                "enabled": true,
+                "color": [0, 255, 0]
               }
             ],
             "enabled": true,
             "clicked": false
           },
           {
-            "color": [
-              255,
-              255,
-              255
-            ],
+            "color": [255, 255, 255],
             "led_pin": 25,
-            "bin_id": "R2_02",
+            "bin_id": "RC-2_02",
             "button_pin": 14,
             "schedules": [
               {
+                "time": "10:00",
+                "enabled": true,
+                "color": [255, 0, 0]
+              },
+              {
+                "time": "10:02",
+                "enabled": true,
+                "color": [0, 0, 255]
+              },
+              {
+                "time": "10:08",
+                "enabled": true,
+                "color": [255, 255, 0]
+              },
+              {
                 "time": "10:12",
                 "enabled": true,
-                "color": [
-                  0,
-                  0,
-                  255
-                ]
+                "color": [255, 0, 255]
               }
             ],
             "enabled": true,
             "clicked": false
           },
           {
-            "color": [
-              255,
-              255,
-              255
-            ],
+            "color": [255, 255, 255],
             "led_pin": 26,
-            "bin_id": "R2_03",
+            "bin_id": "RC-2_03",
             "button_pin": 15,
-            "schedules": [],
+            "schedules": [
+              {
+                "time": "10:00",
+                "enabled": true,
+                "color": [0, 0, 255]
+              },
+              {
+                "time": "10:03",
+                "enabled": true,
+                "color": [255, 0, 255]
+              },
+              {
+                "time": "10:09",
+                "enabled": true,
+                "color": [255, 255, 0]
+              },
+              {
+                "time": "10:13",
+                "enabled": true,
+                "color": [0, 255, 0]
+              }
+            ],
             "enabled": true,
             "clicked": false
           },
           {
-            "color": [
-              255,
-              255,
-              255
-            ],
+            "color": [255, 255, 255],
             "led_pin": 27,
-            "bin_id": "R2_04",
+            "bin_id": "RC-2_04",
             "button_pin": 16,
             "schedules": [
               {
-                "time": "10:12",
+                "time": "10:01",
                 "enabled": true,
-                "color": [
-                  255,
-                  255,
-                  0
-                ]
+                "color": [255, 255, 0]
+              },
+              {
+                "time": "10:08",
+                "enabled": true,
+                "color": [0, 0, 255]
+              },
+              {
+                "time": "10:10",
+                "enabled": true,
+                "color": [0, 255, 0]
+              },
+              {
+                "time": "10:13",
+                "enabled": true,
+                "color": [255, 0, 0]
               }
             ],
             "enabled": true,

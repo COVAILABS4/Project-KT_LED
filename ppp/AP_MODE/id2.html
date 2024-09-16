@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ESP32 Configuration</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+
+      .container {
+        background: #ffffff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        width: 100%;
+        max-width: 600px;
+      }
+
+      h2 {
+        margin-top: 0;
+        color: #333;
+        text-align: center;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 5px;
+        font-weight: bold;
+        color: #555;
+      }
+
+      .form-group div {
+        font-size: 16px;
+        color: #333;
+        margin-bottom: 5px;
+      }
+
+      .form-group input[type="text"],
+      .form-group input[type="password"] {
+        width: 100%;
+        padding: 8px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        box-sizing: border-box;
+      }
+
+      .form-group input[type="checkbox"] {
+        margin-right: 10px;
+      }
+
+      .form-group input[type="button"] {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        display: block;
+        margin: 10px auto;
+      }
+
+      .form-group input[type="button"]:hover {
+        background-color: #0056b3;
+      }
+
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 50px;
+        height: 24px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: 0.4s;
+        border-radius: 24px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        border-radius: 50%;
+        left: 4px;
+        bottom: 4px;
+        background-color: white;
+        transition: 0.4s;
+      }
+
+      input:checked + .slider {
+        background-color: #007bff;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(26px);
+      }
+
+      .container h4 {
+        color: #555;
+        text-align: center;
+        margin-top: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>ESP32 Configuration</h2>
+      <!-- Toggle Switch -->
+      Change Mode :
+      <label class="switch">
+        <input
+          class="toggle-edit"
+          type="checkbox"
+          id="editModeSwitch"
+          onchange="toggleEdit()"
+        />
+        <span class="slider round"></span>
+      </label>
+      <form id="configForm">
+        <!-- Form group for KIT_NO -->
+        <div class="form-group">
+          <label for="KIT_NO">KIT NO:-</label>
+          <div id="KIT_NO_display">{{KIT_NO}}</div>
+          <input
+            type="text"
+            id="KIT_NO_input"
+            name="KIT_NO"
+            style="display: none"
+          />
+        </div>
+
+        <!-- Form group for STATIC_NO -->
+        <div class="form-group">
+          <label for="STATIC_NO">LOCAL IP :-</label>
+          <div id="STATIC_NO_display">{{STATIC_NO}}</div>
+          <input
+            type="text"
+            id="STATIC_NO_input"
+            name="STATIC_NO"
+            style="display: none"
+          />
+        </div>
+
+        <!-- Form group for SERVER_NO -->
+        <div class="form-group">
+          <label for="SERVER_NO">HOST IP :-</label>
+          <div id="SERVER_NO_display">{{SERVER_NO}}</div>
+          <input
+            type="text"
+            id="SERVER_NO_input"
+            name="SERVER_NO"
+            style="display: none"
+          />
+        </div>
+
+        <!-- Form group for SSID -->
+        <div class="form-group">
+          <label for="SSID">SSID :-</label>
+          <div id="SSID_display">{{SSID}}</div>
+          <input
+            type="text"
+            id="SSID_input"
+            name="SSID"
+            style="display: none"
+          />
+        </div>
+
+        <!-- Form group for PASSWORD -->
+        <div class="form-group">
+          <label for="PASSWORD">PASSWORD:-</label>
+          <div id="PASSWORD_display">{{PASSWORD}}</div>
+          <input
+            type="password"
+            id="PASSWORD_input"
+            name="PASSWORD"
+            style="display: none"
+          />
+          <!-- Show Password Checkbox -->
+          <input
+            type="checkbox"
+            id="showPasswordCheckbox"
+            onclick="togglePasswordVisibility()"
+            style="display: none; margin-top: 5px; width: 20px; height: 20px"
+          />
+          <label
+            for="showPasswordCheckbox"
+            style="display: none"
+            id="showPasswordLabel"
+            >Show Password</label
+          >
+        </div>
+
+        <input
+          type="button"
+          value="Save"
+          onclick="submitForm()"
+          id="submit_button"
+          style="display: none"
+        />
+
+        <h4>IP ADDRESS : {{IP_ADDRESS}}</h4>
+      </form>
+    </div>
+    <script>
+      const config = {
+        KIT_NO: "{{KIT_NO}}",
+        STATIC_NO: "{{STATIC_NO}}",
+        SERVER_NO: "{{SERVER_NO}}",
+        SSID: "{{SSID}}",
+        PASSWORD: "{{PASSWORD}}",
+      };
+
+      function toggleEdit() {
+        var isEditing =
+          document.getElementById("KIT_NO_input").style.display === "block";
+
+        var elements = ["KIT_NO", "STATIC_NO", "SERVER_NO", "SSID", "PASSWORD"];
+
+        elements.forEach(function (element) {
+          document.getElementById(element + "_display").style.display =
+            isEditing ? "block" : "none";
+          document.getElementById(element + "_input").style.display = isEditing
+            ? "none"
+            : "block";
+          if (!isEditing) {
+            document.getElementById(element + "_input").value = config[element];
+          }
+        });
+
+        // Show or hide the show password checkbox and label based on editing mode
+        document.getElementById("showPasswordCheckbox").style.display =
+          isEditing ? "none" : "block";
+        document.getElementById("showPasswordLabel").style.display = isEditing
+          ? "none"
+          : "block";
+
+        document.getElementById("submit_button").style.display = isEditing
+          ? "none"
+          : "block";
+      }
+
+      function togglePasswordVisibility() {
+        var passwordInput = document.getElementById("PASSWORD_input");
+        var showPasswordCheckbox = document.getElementById(
+          "showPasswordCheckbox"
+        );
+
+        if (showPasswordCheckbox.checked) {
+          passwordInput.type = "text";
+        } else {
+          passwordInput.type = "password";
+        }
+      }
+
+      function submitForm() {
+        var form = document.getElementById("configForm");
+        var formData = new FormData(form);
+
+        // Convert form data to an object
+        var params = new URLSearchParams(formData);
+
+        fetch("/update", {
+          method: "POST",
+          body: params,
+        })
+          .then((response) => {
+            if (response.ok) {
+              window.location.reload();
+            } else {
+              alert("Failed to update configuration");
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+          });
+      }
+    </script>
+  </body>
+</html>

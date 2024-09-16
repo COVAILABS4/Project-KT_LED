@@ -36,13 +36,13 @@ const Header = ({ data }) => {
         <Button href="/setup" variant="info" className="button-styled">
           Setup
         </Button>
-        <Button
+        {/* <Button
           variant="success"
           onClick={() => downloadJSON(data)}
           className="button-styled"
         >
           Download
-        </Button>
+        </Button> */}
         <Button
           variant="primary"
           onClick={() => navigate("/import")}

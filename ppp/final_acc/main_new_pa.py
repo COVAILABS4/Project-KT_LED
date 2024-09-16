@@ -19,7 +19,7 @@ server_ip = "192.168.65.83"
 
 KIT_NO = 1
 
-SERVER_NO = 255
+SERVER_NO = 83
 
 # Define I2C pins for SDA and SCL
 sda_pin = machine.Pin(21)
@@ -45,6 +45,7 @@ relay = machine.Pin(relay_pin, machine.Pin.OUT)
 # Shared state for buzzer and relay management
 active_bins = [] 
 
+#-----------------------set and get data------------------------#
 def get_data():
     data = []
     with open("data.json", 'r') as f:
@@ -60,7 +61,65 @@ def set_data(new_data):
     
     # return data;
 
+#-----------------------END of data------------------------#
 
+# File path for queues.json
+QUEUE_FILE = 'queue.json'
+
+def read_json():
+    try:
+        with open(QUEUE_FILE, 'r') as file:
+            data = ujson.load(file)
+            return data
+    except Exception as e:
+        print(f"Error reading {QUEUE_FILE}: {e}")
+        return None
+
+def write_json(data):
+    try:
+        with open(QUEUE_FILE, 'w') as file:
+            ujson.dump(data, file)
+    except Exception as e:
+        print(f"Error writing to {QUEUE_FILE}: {e}")
+
+def read_notify_queue():
+    data = read_json()
+    if data is not None:
+        return data.get('notification_queue', [])
+    return []
+
+def add_notify_queue(item):
+    data = read_json()
+    if data is not None:
+        data['notification_queue'].append(item)
+        write_json(data)
+
+def clear_notify_queue():
+    data = read_json()
+    if data is not None:
+        data['notification_queue'] = []
+        write_json(data)
+
+def read_message_queue():
+    data = read_json()
+    if data is not None:
+        return data.get('message_queue', [])
+    return []
+
+def add_message_queue(item):
+    data = read_json()
+    if data is not None:
+        data['message_queue'].append(item)
+        write_json(data)
+
+def clear_message_queue():
+    data = read_json()
+    if data is not None:
+        data['message_queue'] = []
+        write_json(data)
+
+
+#--------------------------------------END of QUEUE---------------------#
 
 def connect_to_wifi(ssid, password):
     """Connect to the Wi-Fi network and handle IP extraction and modification."""
@@ -79,7 +138,7 @@ def connect_to_wifi(ssid, password):
             # Check if 10 seconds have passed
             if time.time() - start_time > 10:
                 print("\nFailed to connect within 10 seconds.")
-                check_and_reset()
+                machine.reset()
                 return
         
         print()
@@ -111,6 +170,7 @@ def disconnect_wifi():
     if sta.isconnected():
         sta.disconnect()
         print('WiFi disconnected')
+
 def get_mac():  
     sta.active(True)
     wlan_mac = sta.config('mac')
@@ -216,8 +276,6 @@ def load_json_rack(data,mac):
 # -- BINS
 bins = []
 
-
-
 def config_all(config):
     if not config:
         return
@@ -238,77 +296,137 @@ def config_all(config):
     bins[0].color = (0,0,0)
     bins[0].change_led_color()
     time.sleep(0.5)
+
+
     for i in bins:
         i.color = (0,0,0)
         i.change_led_color()
     print("All bins initialized and ready.")
 
-
-receive_thread_soc = None
-
 def start_server():
-    global server_ip;
+    global server_ip
     s = None
     try:
-        addr = socket.getaddrinfo(server_ip, 8000)[0][-1]
+        addr = socket.getaddrinfo("0.0.0.0", 8000)[0][-1]
         s = socket.socket()
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    except Exception as err:
-        check_and_reset()
-    try:
-        try:
-            s.bind(addr)
-        except Exception:
-            pass
+        s.setblocking(False)
+        s.bind(addr)
         s.listen(1)
         print('Listening on', addr)
+
+        time.sleep(2)
+        push_req()
+        
+        start_time = time.time()  # Record the start time
+        
         while True:
+            current_time = time.time()
+            elapsed_time = current_time - start_time
+            if elapsed_time >= 20:  # Stop server after 5 seconds
+                print("Stopping server after 5 seconds.")
+                break
+            
             try:
                 cl, addr = s.accept()
                 print('Client connected from', addr)
+                cl.setblocking(False)
                 cl_file = cl.makefile('rwb', 0)
-                request_line = cl_file.readline().decode('utf-8').strip()
-                method, path, version = request_line.split()
-
-                sev_data = None
-                try:
-                    headers = {}
-                    while True:
-                        line = cl_file.readline().decode('utf-8').strip()
-                        if not line:
-                            break
+                
+                # Non-blocking read of the request line
+                request_line = b''
+                while b'\r\n' not in request_line:
+                    try:
+                        request_line += cl_file.read(1)
+                    except OSError as e:
+                        if e.errno == 11:  # EAGAIN
+                            if time.time() - start_time >= 5:
+                                raise TimeoutError("Server timeout")
+                            time.sleep(0.1)
+                            continue
+                        else:
+                            raise e
+                
+                method, path, version = request_line.decode('utf-8').strip().split()
+                
+                # Read headers (non-blocking)
+                headers = {}
+                header_line = b''
+                while b'\r\n\r\n' not in header_line:
+                    try:
+                        header_line += cl_file.read(1)
+                    except OSError as e:
+                        if e.errno == 11:  # EAGAIN
+                            if time.time() - start_time >= 5:
+                                raise TimeoutError("Server timeout")
+                            time.sleep(0.1)
+                            continue
+                        else:
+                            raise e
+                
+                for line in header_line.decode('utf-8').strip().split('\r\n'):
+                    if ': ' in line:
                         key, value = line.split(': ', 1)
                         headers[key] = value
-
-                    content_length = int(headers.get('Content-Length', 0))
-                    post_data = cl_file.read(content_length)
-                    print('POST Data:', post_data)
-                    sev_data = json.loads(post_data)
-                    response = {'status': 'success'}
-                    cl.send('HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n')
-                    cl.send(json.dumps(response))
-                    
-                except Exception as err:
-                    print(f"Error handling POST request: {err}")
-                    check_and_reset()
-                    response = {'status': 'error', 'message': str(err)}
-                    cl.send('HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n')
-                    cl.send(json.dumps(response))
-                finally:
-                    cl.close();
+                
+                content_length = int(headers.get('Content-Length', 0))
+                
+                # Read POST data (non-blocking)
+                post_data = b''
+                while len(post_data) < content_length:
+                    try:
+                        chunk = cl_file.read(content_length - len(post_data))
+                        if chunk:
+                            post_data += chunk
+                    except OSError as e:
+                        if e.errno == 11:  # EAGAIN
+                            if time.time() - start_time >= 5:
+                                raise TimeoutError("Server timeout")
+                            time.sleep(0.1)
+                            continue
+                        else:
+                            raise e
+                
+                print('POST Data:', post_data)
+                sev_data = json.loads(post_data)
+                response = {'status': 'success'}
+                cl.send('HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n\r\n')
+                cl.send(json.dumps(response))
+                
+                cl.close()
                 
                 if sev_data is not None:
                     handle_operation(sev_data)
                 
-                print(cl)
+            except OSError as err:
+                if err.errno == 11:  # EAGAIN, no client connected
+                    time.sleep(0.1)  # Wait a bit before retrying
+                else:
+                    print(f"Error processing request: {err}")
+                    machine.reset()
+            except TimeoutError:
+                print("Server timeout reached while processing request.")
+                break
             except Exception as err:
-                print(f"Error processing request: {err}")
-                check_and_reset()
+                print(f"Error handling request: {err}")
+                machine.reset()
+                response = {'status': 'error', 'message': str(err)}
+                try:
+                    cl.send('HTTP/1.1 500 Internal Server Error\r\nContent-Type: application/json\r\n\r\n')
+                    cl.send(json.dumps(response))
+                except:
+                    pass  # Client might be disconnected, ignore send errors
+                finally:
+                    try:
+                        cl.close()
+                    except:
+                        pass
     except Exception as err:
-        print("Error binding socket:", err)
+        print("Error in server operation:", err)
     finally:
         if s is not None:
             s.close()
+        print("Server has been shut down.")
 
 def receive_message(e):
     global rtc
@@ -334,28 +452,24 @@ def receive_message(e):
         time.sleep(1)  # Adjust sleep time as per your requirements
 
 # Function to send messages to slave
-message_queue = []  # Array to store messages
 
 def send_message(mac, msg):
-    global message_queue
     
     # Add message to the queue
-    message_queue.append([[i for i in mac], msg])
+    add_message_queue([[i for i in mac], msg])
     print(f"Message added to queue: {msg}")
 
-ack_received = False 
-
-
 def process_message_queue():
-    global sta, e, message_queue, ack_received
-    
+    global sta, e
+
+    message_queue = read_message_queue()
+
     try:
         sta.active(False)
         sta.active(True)
     except Exception as err:
         print(err)
         sta.active(True)
-    remaining_queue = []
     
     for item in message_queue:
         mac, msg = tuple(item)
@@ -371,15 +485,8 @@ def process_message_queue():
             time.sleep(0.5)
         except Exception as err:
             print(f"Error sending message to {mac}: {err}")
-            remaining_queue.append([[i for i in mac], msg])
     
-    # Update the message queue with messages that did not receive acknowledgment
-    message_queue = [i for i in remaining_queue]
-# Function to update local JSON data for schedule
-
-def handle_ack_received():
-    global ack_received
-    ack_received = True
+    clear_message_queue()
 
 
 
@@ -628,231 +735,198 @@ def update_local_json_remove_rack(group_id, rack_id):
 
 # Function to handle different operations
 def handle_operation(rec_data):
-    
-    global wlan_mac,current_group_id,current_rack,group_index;
-    # global ;
-
-    data = get_data()
-    print(wlan_mac)
-    print("COMMING")
     print(rec_data)
-    print(rec_data['operation'])
-    operation = rec_data['operation']
-
-    if operation == 'add-master':
-        new_group_id = rec_data['new_group_id']
-        new_data = [
-                {
-                "Group_id": new_group_id,
-                    "racks": []      
-                }
-            ]
-        set_data(new_data)
-        current_group_id = new_group_id
-        current_rack = ""
-        group_index = 0
+# def handle_operation(rec_data):
     
-    elif operation == 'remove-master':
-        new_data = [
-                {
-                "Group_id": "",
-                    "racks": []      
-                }
-            ]
-        set_data(new_data)
-        current_group_id = ""
-        current_rack = ""
-        group_index = 0
+#     global wlan_mac,current_group_id,current_rack,group_index;
+#     # global ;
+
+#     data = get_data()
+#     print(wlan_mac)
+#     print("COMMING")
+#     print(rec_data)
+#     print(rec_data['operation'])
+#     operation = rec_data['operation']
+
+#     if operation == 'add-master':
+#         new_group_id = rec_data['new_group_id']
+#         new_data = [
+#                 {
+#                 "Group_id": new_group_id,
+#                     "racks": []      
+#                 }
+#             ]
+#         set_data(new_data)
+#         current_group_id = new_group_id
+#         current_rack = ""
+#         group_index = 0
+    
+#     elif operation == 'remove-master':
+#         new_data = [
+#                 {
+#                 "Group_id": "",
+#                     "racks": []      
+#                 }
+#             ]
+#         set_data(new_data)
+#         current_group_id = ""
+#         current_rack = ""
+#         group_index = 0
         
         
-    elif operation == 'push':
-        group_id = rec_data['group_id']
-        rack_id = rec_data['rack_id']
+#     elif operation == 'push':
+#         group_id = rec_data['group_id']
+#         rack_id = rec_data['rack_id']
     
-        bin_id = rec_data['bin_id']
-        mac, bin_idx = update_local_json_schedule(group_id, rack_id, bin_id, rec_data['new_schedule_time'], rec_data['color'])
-        if mac:
-            msg = {
-                "operation": "push",
-                "binIndex": bin_idx,
-                "schedulesTime": rec_data['new_schedule_time'],
-                "color": rec_data['color']
-            }
-        if not wlan_mac == mac:
+#         bin_id = rec_data['bin_id']
+#         mac, bin_idx = update_local_json_schedule(group_id, rack_id, bin_id, rec_data['new_schedule_time'], rec_data['color'])
+#         if mac:
+#             msg = {
+#                 "operation": "push",
+#                 "binIndex": bin_idx,
+#                 "schedulesTime": rec_data['new_schedule_time'],
+#                 "color": rec_data['color']
+#             }
+#         if not wlan_mac == mac:
             
-            send_message(mac, json.dumps(msg))
+#             send_message(mac, json.dumps(msg))
             
             
-    elif operation == 'color-change':
-        group_id = rec_data['group_id']
-        rack_id = rec_data['rack_id']
-        print("CALEDD")
-        bin_id = rec_data['bin_id']
-        mac, bin_idx = update_local_json_color(group_id, rack_id, bin_id, rec_data['color'])
-        if mac:
-            msg = {
-                "operation": "color-change",
-                "binIndex": bin_idx,
-                "color": rec_data['color']
-            }
-            print(wlan_mac , mac)
-            if not wlan_mac == mac:
-                print("CALED3333D")
-                send_message(mac, json.dumps(msg))
-    elif operation == 'add-rack':
+#     elif operation == 'color-change':
+#         group_id = rec_data['group_id']
+#         rack_id = rec_data['rack_id']
+#         print("CALEDD")
+#         bin_id = rec_data['bin_id']
+#         mac, bin_idx = update_local_json_color(group_id, rack_id, bin_id, rec_data['color'])
+#         if mac:
+#             msg = {
+#                 "operation": "color-change",
+#                 "binIndex": bin_idx,
+#                 "color": rec_data['color']
+#             }
+#             print(wlan_mac , mac)
+#             if not wlan_mac == mac:
+#                 print("CALED3333D")
+#                 send_message(mac, json.dumps(msg))
+#     elif operation == 'add-rack':
         
-        group_id = rec_data['group_id']
-        new_rack_id = rec_data['new_rack_id']
-        mac_str = rec_data['mac']
+#         group_id = rec_data['group_id']
+#         new_rack_id = rec_data['new_rack_id']
+#         mac_str = rec_data['mac']
 
-        master_mac, bin_list = update_local_json_add_rack(group_id, new_rack_id, mac_str)
+#         master_mac, bin_list = update_local_json_add_rack(group_id, new_rack_id, mac_str)
         
-        if not wlan_mac == bytes(mac_str):
-                msg = {
-                "operation": "add-rack",
-                "new_rack_id": rec_data['new_rack_id'],
-                "master":[i for i in wlan_mac]
-                }
-                send_message(bytes(mac_str), json.dumps(msg))
-        else:
-            # current_rack = 
-            load_json_rack(data,wlan_mac)
+#         if not wlan_mac == bytes(mac_str):
+#                 msg = {
+#                 "operation": "add-rack",
+#                 "new_rack_id": rec_data['new_rack_id'],
+#                 "master":[i for i in wlan_mac]
+#                 }
+#                 send_message(bytes(mac_str), json.dumps(msg))
+#         else:
+#             # current_rack = 
+#             load_json_rack(data,wlan_mac)
             
-    elif operation == 'click-change':
-        group_id = rec_data['group_id']
-        rack_id = rec_data['rack_id']
-        bin_id = rec_data['bin_id']
-        mac, bin_idx = update_local_json_click(group_id, rack_id, bin_id)
-        remove_from_active_bins(rack_id, bin_idx)
-        check_and_update_buzzer_relay()
-        if mac:
-            msg = {
-                "operation": "click-change",
-                "binIndex": bin_idx,
-            }
+#     elif operation == 'click-change':
+#         group_id = rec_data['group_id']
+#         rack_id = rec_data['rack_id']
+#         bin_id = rec_data['bin_id']
+#         mac, bin_idx = update_local_json_click(group_id, rack_id, bin_id)
+#         remove_from_active_bins(rack_id, bin_idx)
+#         check_and_update_buzzer_relay()
+#         if mac:
+#             msg = {
+#                 "operation": "click-change",
+#                 "binIndex": bin_idx,
+#             }
             
-            if not wlan_mac == mac:
-                send_message(mac, json.dumps(msg))
-            else:
-                bins[bin_idx].clicked = True
-                if not bins[bin_idx].clicked:
-                    bins[bin_idx].change_led_color()
-                else:
-                    bins[bin_idx].turn_off_leds()
-    elif operation == 'enable-change':
-        group_id = rec_data['group_id']
-        rack_id = rec_data['rack_id']
-        bin_id = rec_data['bin_id']
-        mac, bin_idx = update_local_json_enabled(group_id, rack_id, bin_id)
-        if mac:
-            msg = {
-                "operation": "enable-change",
-                "binIndex": bin_idx,
-            }
+#             if not wlan_mac == mac:
+#                 send_message(mac, json.dumps(msg))
+#             else:
+#                 bins[bin_idx].clicked = True
+#                 if not bins[bin_idx].clicked:
+#                     bins[bin_idx].change_led_color()
+#                 else:
+#                     bins[bin_idx].turn_off_leds()
+#     elif operation == 'enable-change':
+#         group_id = rec_data['group_id']
+#         rack_id = rec_data['rack_id']
+#         bin_id = rec_data['bin_id']
+#         mac, bin_idx = update_local_json_enabled(group_id, rack_id, bin_id)
+#         if mac:
+#             msg = {
+#                 "operation": "enable-change",
+#                 "binIndex": bin_idx,
+#             }
             
-            if not wlan_mac == mac:
-                send_message(mac, json.dumps(msg))
-            else:
-                bins[bin_idx].enabled = not bins[bin_idx].enabled
-                if bins[bin_idx].enabled:
-                    bins[bin_idx].change_led_color()
-                else:
-                    bins[bin_idx].turn_off_leds()
-    elif operation == 'remove-rack':
-        group_id = rec_data['group_id']
-        rack_id = rec_data['rack_id']
-        if update_local_json_remove_rack(group_id, rack_id):
-            msg = {
-                "operation": "remove-rack",
-                "group_id": group_id,
-                "rack_id": rack_id
-            }
-            send_message(wlan_mac, json.dumps(msg))
-        else:
-            print(f"Failed to remove rack {rack_id} from group {group_id}.")
+#             if not wlan_mac == mac:
+#                 send_message(mac, json.dumps(msg))
+#             else:
+#                 bins[bin_idx].enabled = not bins[bin_idx].enabled
+#                 if bins[bin_idx].enabled:
+#                     bins[bin_idx].change_led_color()
+#                 else:
+#                     bins[bin_idx].turn_off_leds()
+#     elif operation == 'remove-rack':
+#         group_id = rec_data['group_id']
+#         rack_id = rec_data['rack_id']
+#         if update_local_json_remove_rack(group_id, rack_id):
+#             msg = {
+#                 "operation": "remove-rack",
+#                 "group_id": group_id,
+#                 "rack_id": rack_id
+#             }
+#             send_message(wlan_mac, json.dumps(msg))
+#         else:
+#             print(f"Failed to remove rack {rack_id} from group {group_id}.")
 
-    elif operation == 'remove-schedule':
-        group_id = rec_data['group_id']
-        rack_id = rec_data['rack_id']
-        bin_id = rec_data['bin_id']
-        scheduled_index = rec_data['scheduled_index']
-        if update_local_json_remove_schedule(group_id, rack_id, bin_id, scheduled_index):
-            msg = {
-                "operation": "remove-schedule",
-                "group_id": group_id,
-                "rack_id": rack_id,
-                "bin_id": bin_id,
-                "scheduled_index": scheduled_index
-            }
-            send_message(wlan_mac, json.dumps(msg))
-        else:
-            print(f"Failed to remove schedule index {scheduled_index} from bin {bin_id}.")
+#     elif operation == 'remove-schedule':
+#         group_id = rec_data['group_id']
+#         rack_id = rec_data['rack_id']
+#         bin_id = rec_data['bin_id']
+#         scheduled_index = rec_data['scheduled_index']
+#         if update_local_json_remove_schedule(group_id, rack_id, bin_id, scheduled_index):
+#             msg = {
+#                 "operation": "remove-schedule",
+#                 "group_id": group_id,
+#                 "rack_id": rack_id,
+#                 "bin_id": bin_id,
+#                 "scheduled_index": scheduled_index
+#             }
+#             send_message(wlan_mac, json.dumps(msg))
+#         else:
+#             print(f"Failed to remove schedule index {scheduled_index} from bin {bin_id}.")
 
     
-    elif operation == 'schedule-change':
-        group_id = rec_data['group_id']
-        rack_id = rec_data['rack_id']
-        bin_id = rec_data['bin_id']
-        scheduled_index = rec_data['scheduled_index']
-        current_enabled_status = rec_data['current_enabled_status']
-        mac, bin_idx = update_local_json_schedule_enabled(group_id, rack_id, bin_id,scheduled_index,current_enabled_status)
-        if mac:
-            msg = {
-                "operation": "schedule-change",
-                "binIndex": bin_idx,
-                "scheduled_index" : scheduled_index,
-                "current_enabled_status" : current_enabled_status
-            }
+#     elif operation == 'schedule-change':
+#         group_id = rec_data['group_id']
+#         rack_id = rec_data['rack_id']
+#         bin_id = rec_data['bin_id']
+#         scheduled_index = rec_data['scheduled_index']
+#         current_enabled_status = rec_data['current_enabled_status']
+#         mac, bin_idx = update_local_json_schedule_enabled(group_id, rack_id, bin_id,scheduled_index,current_enabled_status)
+#         if mac:
+#             msg = {
+#                 "operation": "schedule-change",
+#                 "binIndex": bin_idx,
+#                 "scheduled_index" : scheduled_index,
+#                 "current_enabled_status" : current_enabled_status
+#             }
             
-            if not wlan_mac == mac:
-                send_message(mac, json.dumps(msg))
-            else:
-                bins[bin_idx].enabled = not bins[bin_idx].enabled
-                if bins[bin_idx].enabled:
-                    bins[bin_idx].change_led_color()
-                else:
-                    bins[bin_idx].turn_off_leds()
+#             if not wlan_mac == mac:
+#                 send_message(mac, json.dumps(msg))
+#             else:
+#                 bins[bin_idx].enabled = not bins[bin_idx].enabled
+#                 if bins[bin_idx].enabled:
+#                     bins[bin_idx].change_led_color()
+#                 else:
+#                     bins[bin_idx].turn_off_leds()
     
-
-notification_queue = []
-
-
-def save_queues_to_backup():
-    backup_data = {
-        "notify": [i for i in notification_queue],
-        "mess":[i for i in message_queue] 
-    }
-
-
-    print(backup_data)
-    with open('back.json', 'w') as f:
-        json.dump(backup_data, f)   
-    with open('back.json', 'r') as f:
-        backupdata = json.load(f)
-        print(backupdata)
-    time.sleep(2)
-
-def load_queues_from_backup():
-    global message_queue, notification_queue
-    try:
-        with open('back.json', 'r') as f:
-            backup_data = json.load(f)
-            notification_queue = backup_data.get("notify", [])
-            message_queue = backup_data.get("mess", [])
-        time.sleep(2)
-        new_data = {
-            "notify": [],
-            "mess":[] 
-        }
-
-        with open('back.json', 'w') as f:
-            json.dump(new_data, f)  
-    except Exception as err:
-        print("No backup found or error loading backup:", err)
-
 
 def update_data_json_from_message(msg):
-    global isAvail, current_group_id,current_rack,bins,notification_queue;
+    global isAvail, current_group_id,current_rack,bins;
+
+    data = get_data()
     try:
         msg_data = json.loads(msg)
         rack_id = msg_data.get('rack_id')
@@ -925,22 +999,24 @@ def update_data_json_from_message(msg):
         print("Data JSON updated based on received message")
 
         # Add notification to queue
-        notification_queue.append({
+        add_notify_queue({
             'group_id': current_group_id,
             'rack_id': rack_id,
             'bin_idx': bin_idx,
             'operation': operation,
             'color' : color_arr
         })
-        # if isAvail:
-            # process_notification_queue()
+      
     except Exception as err:
         print(f"Error updating JSON from message: {err}")
 
 
 def process_notification_queue():
-    global server_ip,notification_queue;
+    global server_ip;
     response = None
+    notification_queue = read_notify_queue()
+
+
     while notification_queue:
         notification = notification_queue.pop(0)
         print(notification)
@@ -962,88 +1038,81 @@ def process_notification_queue():
             if response:
                 response.close()
 
+    clear_notify_queue()
+
+
 def loaders():
     data = get_data()
     load_json_rack(data,wlan_mac)
     data = None
 
-SSID = 'ACTFIBERNET'
-PASSWORD = 'act12345'
+SSID = 'AB7'
+PASSWORD = '07070707'
 wlan_mac = get_mac()
 
-# Thread and control variables
+
 receive_thread = None
 stop_thread_flag = False
-def stop_thread():
-    global stop_thread_flag
-    stop_thread_flag = True
+# def stop_thread():
+#     global stop_thread_flag
+#     stop_thread_flag = True
 
+# def init_esp_now():
+#     global e,receive_thread,sta
+#     print("Initialize the ESPNOW")
 
-def check_and_reset():
-    global message_queue, notification_queue
-    if not message_queue and not notification_queue:
-        machine.reset()
-    else:
-        print("Queues are not empty, saving to backup.json.")
-        save_queues_to_backup()
-        machine.reset()
+#     try:
+#         sta = network.WLAN(network.STA_IF)
+#         sta.active(True)
+#         e = espnow.ESPNow()
+#         e.active(True)
+#     except Exception :
+#         machine.reset()
+#     if receive_thread is not None:
+#         stop_thread()
+#         time.sleep(1)  # Give some time for the thread to stop
+#         receive_thread = None 
+#     try:
+#         try:
+#             receive_thread = _thread.start_new_thread(receive_message, (e,))
+#         except Exception:
+#             machine.reset()
+#         print(_thread.stack_size())
+#     except Exception as err:
+#         print(f"Error starting thread 1: {e}")
+#         machine.reset()
 
-def init_esp_now():
-    global e,receive_thread,sta
-    print("Initialize the ESPNOW")
+# def push_req():
+#     global isAvail;
+#     isAvail = True
+#     url = "http://"+server_ip+":5000/avail"  # Replace <SERVER_IP> with the actual IP address of your server
+#     try:
+#         response = requests.get(url)
+#         if response.status_code == 200:
+#             print("Successfully triggered queue processing.")
+#         else:
+#             print(f"Error: Received unexpected status code {response.status_code}")
+#         response.close()
+#     except Exception as err:
+#         print(f"An unexpected error occurred: {err}")
 
-    try:
-        sta = network.WLAN(network.STA_IF)
-        sta.active(True)
-        e = espnow.ESPNow()
-        e.active(True)
-    except Exception :
-        check_and_reset()
-    if receive_thread is not None:
-        stop_thread()
-        time.sleep(1)  # Give some time for the thread to stop
-        receive_thread = None 
-    try:
-        try:
-            receive_thread = _thread.start_new_thread(receive_message, (e,))
-        except Exception:
-            check_and_reset()
-        print(_thread.stack_size())
-    except Exception as err:
-        print(f"Error starting thread 1: {e}")
-        check_and_reset()
-
-def push_req():
-    global isAvail;
-    isAvail = True
-    url = "http://"+server_ip+":5000/avail"  # Replace <SERVER_IP> with the actual IP address of your server
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            print("Successfully triggered queue processing.")
-        else:
-            print(f"Error: Received unexpected status code {response.status_code}")
-        response.close()
-    except Exception as err:
-        print(f"An unexpected error occurred: {err}")
-
-def stop_req():
-    global isAvail;
-    isAvail = False
-    url = "http://"+server_ip+":5000/stop"  # Replace <SERVER_IP> with the actual IP address of your server
-    try:
-        response = requests.get(url)
-        if response.status_code == 200:
-            print("Successfully stopped queue processing.")
-        else:
-            print(f"Error: Received unexpected status code {response.status_code}")
-        response.close()
-    except Exception as err:
-        print(f"An unexpected error occurred: {err}")
+# def stop_req():
+#     global isAvail;
+#     isAvail = False
+#     url = "http://"+server_ip+":5000/stop"  # Replace <SERVER_IP> with the actual IP address of your server
+#     try:
+#         response = requests.get(url)
+#         if response.status_code == 200:
+#             print("Successfully stopped queue processing.")
+#         else:
+#             print(f"Error: Received unexpected status code {response.status_code}")
+#         response.close()
+#     except Exception as err:
+#         print(f"An unexpected error occurred: {err}")
         
         
 
-# Define the pin for the switch
+#Define the pin for the switch
 switch_pin = machine.Pin(2, machine.Pin.IN)
 
 threadss = None
@@ -1086,6 +1155,8 @@ def notify_slave(messing):
         time.sleep(4)
         print("Notified")
 
+
+
 def check_switch_state():
     global SSID, PASSWORD, threadss, switch_pin, e
     prev_state = switch_pin.value()
@@ -1097,33 +1168,11 @@ def check_switch_state():
 
         if curr_state != prev_state or isFirst:
             isFirst = False
-            if curr_state == 0:  # Switch ON state
-                print("Switch ON")
+            if curr_state == 1:  # Switch ON state
+                setup_access_point()
+
+                _thread.start_new_thread(start_server_AP,())
                 
-                # Handle only the online state
-                if e is None:
-                    init_esp_now()
-                    time.sleep(2)
-                    notify_slave("unavail")
-                
-                connect_to_wifi(SSID, PASSWORD)
-                time.sleep(2)
-
-                if threadss is not None:
-                    threadss = None
-
-                time.sleep(2)
-                try:  
-                    threadss = _thread.start_new_thread(start_server, ())
-                except Exception:
-                    check_and_reset()
-
-                print(f"Thread started: {threadss}")
-                time.sleep(2)
-                push_req()
-
-                time.sleep(2)
-                process_notification_queue()
 
             else:  # Switch OFF state
                 print("Switch OFF - Initial State")
@@ -1132,50 +1181,42 @@ def check_switch_state():
                 continue
             prev_state = curr_state
 
-        elif curr_state == 1:  # Switch OFF state; handle toggling every 30 seconds
+        elif curr_state == 0:  # Switch OFF state; handle toggling every 30 seconds
             if offline_toggled:  # Perform online state
-                notify_slave("unavail")
+                # notify_slave("unavail")
                 time.sleep(2)
                 print("Switch OFF - Online State")
                 connect_to_wifi(SSID, PASSWORD)
                 time.sleep(2)
 
-                if threadss is not None:
-                    threadss = None
-
+                # try:  
+                #     start_server()
+                # except Exception:
+                #     machine.reset()
+                
                 time.sleep(2)
-                try:  
-                    threadss = _thread.start_new_thread(start_server, ())
-                except Exception:
-                    check_and_reset()
-
-                print(f"Thread started: {threadss}")
-                time.sleep(2)
-                push_req()
-
-                time.sleep(2)
-                process_notification_queue()
+                # process_notification_queue()
 
                 offline_toggled = False  
 
             else: 
                 print("Switch OFF - Offline State")
-                stop_req()
-                time.sleep(2)
-                disconnect_wifi()
-                print("Switch OFF")
-                time.sleep(2)
-                init_esp_now()
-                time.sleep(2)
-                process_message_queue()
-                time.sleep(2)
-                sent_time();
-                time.sleep(2)
-                notify_slave("avail")
+                # # stop_req()
+                # time.sleep(2)
+                # disconnect_wifi()
+                # print("Switch OFF")
+                # time.sleep(2)
+                # init_esp_now()
+                # time.sleep(2)
+                # process_message_queue()
+                # time.sleep(2)
+                # sent_time();
+                # time.sleep(2)
+                # notify_slave("avail")
 
-                offline_toggled = True  # Toggle back to online for next cycle
+                # offline_toggled = True  # Toggle back to online for next cycle
+                time.sleep(20)
 
-        time.sleep(50 if curr_state == 1 else 0.1)
 
 
 
@@ -1229,14 +1270,128 @@ def schedule_checker():
         time.sleep(60)  # Check every minute
 
 
+def set_default_color():
+    pins = [12, 25, 26, 27]
+    neopixels = [NeoPixel(machine.Pin(pin), 10) for pin in pins]
+    for np in neopixels:
+        for i in range(np.n):
+            np[i] = (0, 0, 0)  # Set each LED to (0, 0, 0)
+        np.write()  # Update the LEDs with the new color
+
+set_default_color()
+
 loaders()
-
-load_queues_from_backup()
-
+                    
 
 _thread.start_new_thread(schedule_checker, ())
+
+def setup_access_point():
+    ap = network.WLAN(network.AP_IF)
+    ap.active(True)
+    ap.config(essid='ESP32-AP', password='12345678', channel=1, authmode=network.AUTH_WPA_WPA2_PSK)
+    while not ap.active():
+        pass
+    print('AP Mode configured:', ap.ifconfig())
+    return ap
+
+
+def teardown_access_point(ap):
+    ap.active(False)
+    print("Access Point deactivated.")
+
+
+local_ip = "192.168.4.1"
+
+def load_config():
+    try:
+        with open('config.json', 'r') as f:
+            return json.load(f)
+    except:
+        return {"KIT_NO": "", "STATIC_NO": "", "SERVER_NO": "", "SSID": "", "PASSWORD": ""}
+
+def save_config(config):
+    with open('config.json', 'w') as f:
+        json.dump(config, f)
+
+def render_html(template, config):
+    global local_ip
+    print(local_ip)
+    for key, value in config.items():
+        template = template.replace('{{' + key + '}}', value)
+    
+    template = template.replace('{{IP_ADDRESS}}', local_ip)
+    return template
+
+def url_decode(url_encoded_str):
+    """Manually decode a URL-encoded string."""
+    result = url_encoded_str.replace('+', ' ')
+    parts = result.split('%')
+    decoded_str = parts[0]
+    for part in parts[1:]:
+        try:
+            decoded_str += chr(int(part[:2], 16)) + part[2:]
+        except ValueError:
+            decoded_str += '%' + part
+    return decoded_str
+
+def parse_form_data(body):
+    """Parse URL-encoded form data."""
+    data = {}
+    pairs = body.split('&')
+    for pair in pairs:
+        if '=' in pair:
+            key, value = pair.split('=', 1)
+            data[url_decode(key)] = url_decode(value)
+    return data
+
+def handle_request(client, config):
+    request = client.recv(1024).decode('utf-8')
+    if 'POST /update' in request:
+        body = request.split('\r\n\r\n')[1]
+        params = parse_form_data(body)
+        config.update(params)
+        save_config(config)
+        response = 'HTTP/1.1 303 See Other\r\nLocation: /\r\n\r\n'
+        client.send(response.encode('utf-8'))
+    else:
+        with open('intex.txt', 'r') as f:
+            html = f.read()
+        response = render_html(html, config)
+        client.send('HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n\r\n'.encode('utf-8'))
+        client.send(response.encode('utf-8'))
+        
+        
+def start_server_AP():
+    ap = setup_access_point()  # Setup the Access Point
+    config = load_config()     # Load the configuration
+    addr = socket.getaddrinfo("0.0.0.0", 80)[0][-1]
+
+    try:
+        s_ap = socket.socket()  # Create a new socket
+        try:
+            s_ap.bind(addr)     # Bind to the address and port
+        except Exception as bind_error:
+            print(f"Socket binding failed: {bind_error}")
+            machine.reset()     # Resetting device if binding fails
+        s_ap.listen(5)          # Start listening for clients
+        print('Web server running on http://0.0.0.0:80')
+    except OSError as err:
+        print("Socket error during setup:", err)
+        return
+
+    try:
+        while True:
+            try:
+                client, client_addr = s_ap.accept()  # Accept a client connection
+                print('Client connected from', client_addr)
+                handle_request(client, config)       # Handle the client request
+            except OSError as client_err:
+                print("Error while handling client:", client_err)
+            finally:
+                client.close()  # Ensure the client socket is closed after handling
+    finally:
+        s_ap.close()           # Close the server socket
+        teardown_access_point(ap) 
+
+
 check_switch_state()
-
-
-
-
