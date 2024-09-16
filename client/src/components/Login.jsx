@@ -9,12 +9,15 @@ import {
   Col,
   Card,
   Alert,
+  InputGroup,
 } from "react-bootstrap";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 import "./Login.css";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState(null);
   const navigate = useNavigate();
 
@@ -39,6 +42,10 @@ const Login = () => {
       });
   };
 
+  const togglePasswordVisibility = () => {
+    setShowPassword((prevState) => !prevState);
+  };
+
   return (
     <Container className="mt-5">
       <Row className="justify-content-md-center">
@@ -59,12 +66,21 @@ const Login = () => {
                 </Form.Group>
                 <Form.Group controlId="formPassword" className="mb-3">
                   <Form.Label>Password</Form.Label>
-                  <Form.Control
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
+                  <InputGroup>
+                    <Form.Control
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                    />
+                    <Button
+                      variant="outline-secondary"
+                      onClick={togglePasswordVisibility}
+                      style={{ height: "100%", borderLeft: "none" }} // Adjusted height and border
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </Button>
+                  </InputGroup>
                 </Form.Group>
                 <Button variant="primary" type="submit" className="w-100">
                   Login
