@@ -77,6 +77,18 @@
         background-color: #0056b3;
       }
 
+      #submit_button {
+        border: 1px solid green;
+        border-radius: 4px;
+        background-color: green;
+        color: white;
+        width: 100%;
+        padding: 5px;
+        font-size: 20px;
+        font-weight: bold;
+        /* font-size: large; */
+      }
+
       .switch {
         position: relative;
         display: inline-block;
@@ -203,18 +215,20 @@
             style="display: none"
           />
           <!-- Show Password Checkbox -->
-          <input
-            type="checkbox"
-            id="showPasswordCheckbox"
-            onclick="togglePasswordVisibility()"
-            style="display: none; margin-top: 5px; width: 20px; height: 20px"
-          />
-          <label
-            for="showPasswordCheckbox"
-            style="display: none"
-            id="showPasswordLabel"
-            >Show Password</label
-          >
+          <div style="display: flex; margin: 5px">
+            <input
+              type="checkbox"
+              id="showPasswordCheckbox"
+              onclick="togglePasswordVisibility()"
+              style="display: none; margin-top: 5px; width: 20px; height: 20px"
+            />
+            <label
+              for="showPasswordCheckbox"
+              style="display: none; margin-top: 7px"
+              id="showPasswordLabel"
+              >Show Password</label
+            >
+          </div>
         </div>
 
         <input

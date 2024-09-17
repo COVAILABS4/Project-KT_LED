@@ -511,7 +511,17 @@ def schedule_checker():
         time.sleep(60)
 e = None
 config = {}
-master_mac
+master_mac = {}
+
+def set_default_color():
+    pins = [12, 25, 26, 27]
+    neopixels = [NeoPixel(machine.Pin(pin), 10) for pin in pins]
+    for np in neopixels:
+        for i in range(np.n):
+            np[i] = (0, 0, 0)  # Set each LED to (0, 0, 0)
+        np.write()  # Update the LEDs with the new color
+
+set_default_color()
 
 try:
     config = read_config()

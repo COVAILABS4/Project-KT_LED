@@ -1074,6 +1074,46 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Endpoint to send current server time
+app.get("/get-time", async (req, res) => {
+  try {
+    // Fetch time from the World Time API
+    const response = await axios.get(
+      "http://worldtimeapi.org/api/timezone/Asia/Kolkata"
+    );
+    const currentTime = response.data.datetime; // Get the datetime from the response
+
+    // Send the time in ISO format
+    res.json({
+      time: currentTime,
+    });
+  } catch (error) {
+    console.error("Error fetching time:", error);
+    res.status(500).json({ error: "Failed to fetch time" });
+  }
+});
+// Endpoint to send current server time
+app.get("/get-time1", async (req, res) => {
+  try {
+    // // Fetch time from the World Time API
+    // const response = await axios.get(
+    //   "http://worldtimeapi.org/api/timezone/Asia/Kolkata"
+    // );
+    // const currentTime = response.data.datetime; // Get the datetime from the response
+
+    var currentTime = new Date();
+    // var currentHour = currentTime.getHours();
+    // var currentMinute = currentTime.getMinutes();
+    // Send the time in ISO format
+    res.json({
+      time: currentTime,
+    });
+  } catch (error) {
+    console.error("Error fetching time:", error);
+    res.status(500).json({ error: "Failed to fetch time" });
+  }
+});
+
 app.get("/avail", (req, res) => {
   console.log("-----------------------------", queue);
   isAvail = true;
