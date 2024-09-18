@@ -1144,6 +1144,7 @@ function normalize(data) {
 
 const queues = {}; // Object to maintain separate queues for each server
 const unavailableServers = {}; // Object to track temporarily unavailable servers
+const processingServers = {}; // Object to track servers currently being processed
 
 const addToQueue = (request) => {
   const { ip } = request;
@@ -1153,16 +1154,22 @@ const addToQueue = (request) => {
     queues[ip] = [];
   }
 
-  // Add the request to the respective server's queue
-  queues[ip].push(request);
-  console.log(queues);
-
-  console.log(`Queue for ${ip}:`, queues[ip]);
+  // Check if the request is already in the queue to prevent duplicates
+  if (
+    !queues[ip].some((req) => JSON.stringify(req) === JSON.stringify(request))
+  ) {
+    queues[ip].push(request);
+    console.log(`Queue for ${ip}:`, queues[ip]);
+  } else {
+    console.log(`Request for ${ip} is already in the queue, skipping.`);
+  }
 };
 
 const processQueueForServer = async (ip) => {
-  // Check if the queue for the server has any requests
-  if (queues[ip].length > 0) {
+  // Check if a queue exists and it's not empty
+  if (queues[ip] && queues[ip].length > 0 && !processingServers[ip]) {
+    processingServers[ip] = true; // Mark the server as being processed
+
     const requests = queues[ip]; // Get the full queue for the server
 
     try {
@@ -1192,6 +1199,8 @@ const processQueueForServer = async (ip) => {
           error.response ? error.response.data : error.message
         );
       }
+    } finally {
+      processingServers[ip] = false; // Mark the server as not being processed anymore
     }
   }
 };
