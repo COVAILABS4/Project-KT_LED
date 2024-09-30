@@ -1,0 +1,579 @@
+[
+  {
+    "Group_id": "SAM",
+    "master_device_id": "KT-13",
+    "racks": [
+      {
+        "rack_id": "_D13",
+        "mac": [44, 188, 187, 7, 42, 116],
+        "device_id": "KT-13",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D13_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D13_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D13_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D13_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D39",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 5, 63, 16],
+        "device_id": "KT-39",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D39_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D39_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D39_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D39_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D15",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 5, 52, 244],
+        "device_id": "KT-15",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D15_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D15_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D15_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D15_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D38",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 7, 36, 92],
+        "device_id": "KT-38",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D38_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D38_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D38_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D38_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D66",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 6, 158, 48],
+        "device_id": "KT-66",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D66_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D66_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D66_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D66_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D23",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 6, 147, 224],
+        "device_id": "KT-23",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D23_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D23_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D23_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D23_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D21",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 6, 160, 80],
+        "device_id": "KT-21",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D21_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D21_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D21_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D21_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D59",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 7, 53, 32],
+        "device_id": "KT-59",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D59_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D59_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D59_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D59_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D61",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 5, 49, 124],
+        "device_id": "KT-61",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D61_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D61_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D61_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D61_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D56",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 6, 141, 248],
+        "device_id": "KT-56",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D56_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D56_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D56_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D56_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D28",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 6, 84, 136],
+        "device_id": "KT-28",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D28_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D28_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D28_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D28_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D53",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 5, 23, 200],
+        "device_id": "KT-53",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D53_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D53_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D53_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D53_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      },
+      {
+        "rack_id": "_D43",
+        "master": [44, 188, 187, 7, 42, 116],
+        "mac": [44, 188, 187, 6, 146, 204],
+        "device_id": "KT-43",
+        "bins": [
+          {
+            "color": [255, 255, 255],
+            "led_pin": 12,
+            "bin_id": "_D43_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 25,
+            "bin_id": "_D43_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 26,
+            "bin_id": "_D43_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          },
+          {
+            "color": [255, 255, 255],
+            "led_pin": 27,
+            "bin_id": "_D43_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": false
+          }
+        ]
+      }
+    ]
+  }
+]
