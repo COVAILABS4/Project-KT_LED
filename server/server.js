@@ -1114,6 +1114,8 @@ app.get("/get-time", async (req, res) => {
 //   }
 // });
 
+console.log("Start-new");
+
 const moment = require("moment-timezone");
 
 app.get("/get-time1", async (req, res) => {
@@ -1129,9 +1131,6 @@ app.get("/get-time1", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch time" });
   }
 });
-
-
-
 
 app.get("/avail", (req, res) => {
   console.log("-----------------------------", queue);
