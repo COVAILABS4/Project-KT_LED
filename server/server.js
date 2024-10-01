@@ -126,7 +126,7 @@ const writeStaticIP = (newIP, id, operation) => {
 
     // Find the object with the matching ID
     const index = data.findIndex((item) => item.ID === id);
-
+    var isNew = data[index].IP === "";
     if (index !== -1) {
       // Update the IP if the ID is found
       data[index].IP = newIP;
@@ -137,6 +137,7 @@ const writeStaticIP = (newIP, id, operation) => {
 
     // Write the updated data back to the file
     fs.writeFileSync("./static.json", JSON.stringify(data, null, 2), "utf8");
+    return isNew;
   } catch (error) {
     console.error("Error writing static.json:", error);
     throw new Error("Error writing static.json");
@@ -196,13 +197,16 @@ app.post("/address/setIP", (req, res) => {
   try {
     let device_id = read_device(group_id);
 
-    writeStaticIP(ip, device_id, "set");
+    var isNew = writeStaticIP(ip, device_id, "set");
+    console.log("Status :  ", isNew);
 
-    let fail = updateADDGroupESP(group_id, device_id);
+    if (isNew) {
+      let fail = updateADDGroupESP(group_id, device_id);
 
-    if (fail) {
-      res.status(404).json({ error: "Failed to update the group in ESP" });
-      return;
+      if (fail) {
+        res.status(404).json({ error: "Failed to update the group in ESP" });
+        return;
+      }
     }
 
     // updateLedMacDataExcel(device_id);

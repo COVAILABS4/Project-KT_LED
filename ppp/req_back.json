@@ -1,0 +1,123 @@
+[
+  {
+    "ip": "192.168.5.20",
+    "data": { "operation": "add-master", "new_group_id": "SAM" }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 7, 42, 116],
+      "new_rack_id": "_D13"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 5, 63, 16],
+      "new_rack_id": "_D39"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 5, 52, 244],
+      "new_rack_id": "_D15"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 7, 36, 92],
+      "new_rack_id": "_D38"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 6, 158, 48],
+      "new_rack_id": "_D66"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 6, 147, 224],
+      "new_rack_id": "_D23"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 6, 160, 80],
+      "new_rack_id": "_D21"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 7, 53, 32],
+      "new_rack_id": "_D59"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 5, 49, 124],
+      "new_rack_id": "_D61"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 6, 141, 248],
+      "new_rack_id": "_D56"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 6, 84, 136],
+      "new_rack_id": "_D28"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 7, 9, 208],
+      "new_rack_id": "_D57"
+    }
+  },
+  {
+    "ip": "192.168.5.20",
+    "data": {
+      "group_id": "SAM",
+      "operation": "add-rack",
+      "mac": [44, 188, 187, 6, 146, 204],
+      "new_rack_id": "_D43"
+    }
+  }
+]
