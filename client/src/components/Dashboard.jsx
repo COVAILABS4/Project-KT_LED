@@ -26,6 +26,8 @@ const Dashboard = ({ data, fetchData }) => {
       })
       .then((response) => {
         setSelectedBin(response.data);
+        console.log(response.data);
+
         setShowBinDetails(true);
       })
       .catch((error) => console.log(error));

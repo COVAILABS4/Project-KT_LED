@@ -1,0 +1,293 @@
+
+### 1. Login
+**Endpoint**: `POST /login`
+
+**Request Body**:
+```json
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
+```
+
+**Response**:
+```json
+{
+  "success": true,
+  "user": {
+    "email": "user@example.com"
+  }
+}
+```
+
+---
+
+
+### 2. Get Device Information
+**Endpoint**: `GET /device`
+
+**Response**: 
+```json
+Array of device objects retrieved from the `static.json` file.
+```
+#### Sample
+```
+[
+  {
+    "IP": "192.168.4.1",
+    "ID": "KT-1",
+    "master_id": "STA-1"
+  }
+]
+```
+
+### 3. Get Device Information from Excel
+**Endpoint**: `GET /device/excel`
+
+**Response**:
+Array of device objects retrieved from the `led_mac_data.xlsx` file.
+
+
+#### Sample
+```
+[
+    {
+        "ID": "KT-1",
+        "isMaster": true,
+        "available": true
+    },
+    {
+        "ID": "KT-2",
+        "isMaster": false,
+        "available": true
+    }
+]
+```
+---
+
+
+### 4 . Create New Group
+**Endpoint**: `POST /new/group`
+
+**Request Body**:
+```json
+{
+  "newGroupid": "group123",
+  "newGroupDeviceId": "device123"
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Group added successfully",
+  "group": {
+    "Group_id": "group123",
+    "master_device_id": "device123",
+    "racks": []
+  }
+}
+```
+
+###  5 . Delete Group
+**Endpoint**: `POST /delete/group`
+
+**Request Body**:
+```json
+{
+  "groupId": "group123"
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Group deleted successfully"
+}
+```
+
+---
+
+
+###  6 . Add New Rack to Group
+**Endpoint**: `POST /new/rack`
+
+**Request Body**:
+```json
+{
+  "Groupid": "group123",
+  "newWrackid": "rack123",
+  "id": "device123"
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Rack added successfully",
+  "rack": {
+    "rack_id": "rack123",
+    "mac": [1, 2, 3, 4, 5, 6],
+    "device_id": "device123",
+    "bins": [...]
+  }
+}
+```
+
+###  7 . Delete Rack from Group
+**Endpoint**: `POST /delete/rack`
+
+**Request Body**:
+```json
+{
+  "Groupid": "group123",
+  "rackId": "rack123"
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Rack deleted successfully",
+  "rackId": "rack123"
+}
+```
+
+---
+
+### 8 . Get Bin Details
+**Endpoint**: `GET /bin`
+
+**Query Parameters**:
+- `group_id`
+- `rack_id`
+- `bin_id`
+
+**Response**: Details of the requested bin.
+
+#### Sample
+```
+{
+   "group_id": "STA-1",
+    "rack_id": "111",
+    "color": [
+        255,
+        255,
+        255
+    ],
+    "led_pin": 12,
+    "bin_id": "111_01",
+    "button_pin": 13,
+    "schedules": [],
+    "enabled": true,
+    "clicked": false,
+}
+```
+
+### 9. Toggle Bin Clicked Status
+**Endpoint**: `POST /bin/update/clicked`
+
+**Request Body**:
+```json
+{
+  "group_id": "group123",
+  "rack_id": "rack123",
+  "bin_id": "bin123"
+}
+```
+
+**Response**: Updated bin object with new `clicked` status.
+
+### 10 . Update Bin Schedule
+**Endpoint**: `PUT /bin/update/schedule`
+
+**Request Body**:
+```json
+{
+  "group_id": "group123",
+  "rack_id": "rack123",
+  "bin_id": "bin123",
+  "scheduled_index": 0,
+  "current_enabled_status": true
+}
+```
+
+**Response**: Updated bin schedule object.
+
+---
+
+
+### 11. Add New Schedule
+**Endpoint**: `POST /new/schedule`
+
+**Request Body**:
+```json
+{
+  "group_id": "group123",
+  "wrack_id": "rack123",
+  "bin_id": "bin123",
+  "new_schduled": {
+    "time": "12:00",
+    "color": [255, 0, 0],
+    "enabled": true
+  }
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Schedule added successfully",
+  "bin": {...}
+}
+```
+
+### 12. Delete Schedule
+**Endpoint**: `POST /delete/schedule`
+
+**Request Body**:
+```json
+{
+  "group_id": "group123",
+  "wrack_id": "rack123",
+  "bin_id": "bin123",
+  "scheduleIndex": 0
+}
+```
+
+**Response**:
+```json
+{
+  "message": "Schedule deleted successfully",
+  "bin": {...}
+}
+```
+
+---
+
+
+### 13 . Import Data from Excel
+**Endpoint**: `POST /import`
+
+**Request Body**: Form-data with file upload.
+
+**Response**:
+```json
+{
+  "message": "File imported and data updated successfully"
+}
+```
+
+---
+
+### 14 . Get Current Time
+**Endpoint**: `GET /get-time1`
+
+**Response**:
+```json
+{
+  "time": "2024-10-01T10:34:56.789Z"
+}
+```
+
+---

@@ -192,7 +192,7 @@ const Setup = ({
     }
 
     axios
-      .post("http://" + ip + ":5000/new/wrack", {
+      .post("http://" + ip + ":5000/new/rack", {
         Groupid: groupIdForWrack,
         newWrackid: newWrackId,
         id: deviceId4rack,

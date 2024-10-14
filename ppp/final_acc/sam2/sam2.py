@@ -1285,9 +1285,7 @@ sta = network.WLAN(network.STA_IF)
 sta.active(True)
 
 wlan_mac  =  get_mac()   
-# try:
-    # start_sta()
-    
+
 loaders() 
 
 

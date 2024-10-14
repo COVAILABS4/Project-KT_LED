@@ -390,7 +390,7 @@ function readDeviceConfig(id) {
   return device.mac_arr.split(",").map(Number);
 }
 
-app.post("/new/wrack", (req, res) => {
+app.post("/new/rack", (req, res) => {
   const { Groupid, newWrackid, id } = req.body;
   updateCache(); // Ensure cache is up-to-date
 
