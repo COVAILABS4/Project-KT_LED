@@ -1164,9 +1164,39 @@ function normalize(data) {
   return Math.floor(normalize_data);
 }
 
-const queues = {}; // Object to maintain separate queues for each server
-const unavailableServers = {}; // Object to track temporarily unavailable servers
-const processingServers = {}; // Object to track servers currently being processed
+const path1 = './queue.json';
+
+// Function to load data from queue.json
+const loadQueueData = () => {
+  try {
+    if (fs.existsSync(path1)) {
+      const data = fs.readFileSync(path1, 'utf8');
+      const parsedData = JSON.parse(data);
+      return parsedData;
+    }
+  } catch (error) {
+    console.error("Error loading queue data:", error);
+  }
+
+  // Return default structure if file doesn't exist or fails to load
+  return {
+    queue: {},
+    unavailableServers: {},
+    processingServers: {},
+  };
+};
+
+// Function to save data to queue.json
+const saveQueueData = (data) => {
+  try {
+    fs.writeFileSync(path1, JSON.stringify(data, null, 2));
+  } catch (error) {
+    console.error("Error saving queue data:", error);
+  }
+};
+
+// Load initial data from queue.json
+const { queue: queues, unavailableServers, processingServers } = loadQueueData();
 
 const addToQueue = (request) => {
   const { ip } = request;
@@ -1182,6 +1212,9 @@ const addToQueue = (request) => {
   ) {
     queues[ip].push(request);
     console.log(`Queue for ${ip}:`, queues[ip]);
+
+    // Save updated queue data to queue.json
+    saveQueueData({ queue: queues, unavailableServers, processingServers });
   } else {
     console.log(`Request for ${ip} is already in the queue, skipping.`);
   }
@@ -1207,6 +1240,9 @@ const processQueueForServer = async (ip) => {
       // Clear the queue after successful processing
       queues[ip] = [];
 
+      // Save updated data to queue.json
+      saveQueueData({ queue: queues, unavailableServers, processingServers });
+
       // Pause before the next check (if needed)
       await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (error) {
@@ -1223,6 +1259,9 @@ const processQueueForServer = async (ip) => {
       }
     } finally {
       processingServers[ip] = false; // Mark the server as not being processed anymore
+
+      // Save updated data to queue.json
+      saveQueueData({ queue: queues, unavailableServers, processingServers });
     }
   }
 };

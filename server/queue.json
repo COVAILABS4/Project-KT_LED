@@ -1,0 +1,63 @@
+{
+  "queue": {
+    "192.168.4.1": [
+      {
+        "ip": "192.168.4.1",
+        "data": {
+          "new_group_id": "STA-1",
+          "operation": "add-master"
+        }
+      },
+      {
+        "ip": "192.168.4.1",
+        "data": {
+          "group_id": "STA-1",
+          "new_rack_id": "www",
+          "mac": [
+            44,
+            188,
+            187,
+            5,
+            23,
+            36
+          ],
+          "operation": "add-rack"
+        }
+      },
+      {
+        "ip": "192.168.4.1",
+        "data": {
+          "group_id": "STA-1",
+          "rack_id": "www",
+          "bin_id": "www_01",
+          "new_schedule_time": "13:12",
+          "operation": "push",
+          "color": [
+            0,
+            64,
+            64
+          ]
+        }
+      },
+      {
+        "ip": "192.168.4.1",
+        "data": {
+          "group_id": "STA-1",
+          "rack_id": "www",
+          "bin_id": "www_03",
+          "new_schedule_time": "13:13",
+          "operation": "push",
+          "color": [
+            64,
+            0,
+            64
+          ]
+        }
+      }
+    ]
+  },
+  "unavailableServers": {},
+  "processingServers": {
+    "192.168.4.1": true
+  }
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import {
   Form,
@@ -17,7 +17,6 @@ const Import = ({ fetchData }) => {
   const [message, setMessage] = useState("");
   const [excelData, setExcelData] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [delay, setDelay] = useState(0);
 
   const handleFileChange = (e) => {
     e.preventDefault();
@@ -36,9 +35,6 @@ const Import = ({ fetchData }) => {
           row.map((cell) => ({ value: cell }))
         );
         setExcelData(dataForSpreadsheet);
-
-        // Calculate delay time based on the number of rows in the Excel sheet
-        // setDelay(json.length * 1000 + 5000); // rows count + 5 seconds
       };
       reader.readAsArrayBuffer(files);
     }
@@ -59,17 +55,18 @@ const Import = ({ fetchData }) => {
         fetchData();
         setExcelData(null);
         setFile(null);
-
-        // Wait for the calculated delay time
-        setTimeout(() => {
-          setLoading(false);
-        }, delay);
+        setLoading(false);
       })
       .catch((error) => {
         setMessage("File upload failed");
         console.error("There was an error uploading the file!", error);
         setLoading(false);
       });
+  };
+
+  const handleDownloadSample = () => {
+    const ip = window.location.hostname;
+    window.open(`http://${ip}:5000/download-sample`, "_blank");
   };
 
   return (
@@ -102,6 +99,13 @@ const Import = ({ fetchData }) => {
                   <Spreadsheet data={excelData} onChange={setExcelData} />
                 </div>
               )}
+              <Button
+                variant="secondary"
+                onClick={handleDownloadSample}
+                className="mt-3 w-100"
+              >
+                Download Sample Format
+              </Button>
             </>
           )}
         </Col>

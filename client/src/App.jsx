@@ -102,69 +102,6 @@ function App() {
         processResponseData(data);
       })
       .catch((error) => console.log(error));
-
-    axios
-      .get(`http://${ip}:5000/device`)
-      .then((response) => {
-        // console.log(response.data);
-
-        const devices = response.data;
-        // Filter available devices (where master_id is "")
-        const available = devices.filter((device) => device.master_id === "");
-        // const all = devices.filter((device) => device.master_id === "");
-        const others = devices.filter((device) => device.master_id !== "");
-
-        // console.log(available);
-        // console.log(availableDevices);
-        // console.log();
-
-        setAllStaticDevices(devices);
-
-        setAvailableStaticDevices(available);
-        // setAllDevices(others);
-      })
-      .catch((error) => {
-        console.error("Error fetching device data:", error);
-        // alert("Failed to fetch device data");
-      });
-
-    axios
-      .get(`http://${ip}:5000/device/excel`)
-      .then((response) => {
-        // console.log("Excel data:", response.data);
-
-        const master = [];
-        const slaves = [];
-        const availableAll = [];
-        const forSetIParray = [];
-
-        response.data.forEach((device) => {
-          if (!device.isMaster && device.available) {
-            slaves.push(device);
-          }
-        });
-        // console.log(slaves);
-
-        response.data.forEach((device) => {
-          if (device.available && !device.isMaster) {
-            forSetIParray.push(device);
-          }
-        });
-
-        response.data.forEach((device) => {
-          if (device.available) {
-            availableAll.push(device);
-          }
-        });
-
-        setMasterDevices(master);
-        setSlaveDevices(slaves);
-        setAvailableDevices(availableAll);
-        setForSetIP(forSetIParray);
-      })
-      .catch((error) => {
-        console.error("Error fetching Excel data:", error);
-      });
   };
 
   return (
