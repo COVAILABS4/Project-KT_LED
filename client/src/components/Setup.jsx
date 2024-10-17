@@ -173,10 +173,15 @@ const Setup = ({
       return;
     }
 
+    function normalizeColor(color) {
+      return Math.round((color / 255) * 65);
+    }
+
     const newSchedule = {
       time: scheduleTime,
       enabled: true,
       color: selectedColor.split(",").map(Number),
+      colorESP: selectedColor.split(",").map(Number).map(normalizeColor),
     };
 
     axios
@@ -388,38 +393,43 @@ const Setup = ({
                       .filter((rack) => rack.group_id === groupIdForWrack)
                       .map((rackItem, index) => (
                         <div key={index} style={{ marginBottom: "10px" }}>
-                          {rackItem.racks.map((rack, rackIndex) => (
-                            <div
-                              key={rackIndex}
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                padding: "5px",
-                                borderRadius: "5px",
-                                border: "1px solid #007bff",
-                                marginBottom: "5px",
-                              }}
-                            >
-                              <p
+                          {rackItem.racks.map((rack, rackIndex) => {
+                            // console.log(rack);
+
+                            return (
+                              <div
+                                key={rackIndex}
                                 style={{
-                                  margin: 0,
-                                  fontWeight: "bold",
-                                  color: "#007bff",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                  padding: "5px",
+                                  borderRadius: "5px",
+                                  border: "1px solid #007bff",
+                                  marginBottom: "5px",
                                 }}
                               >
-                                {rackIndex + 1} : {" " + rack.rack_id}
-                              </p>
-                              <Button
-                                variant="danger"
-                                size="sm"
-                                onClick={() => handleDeleteRack(rack)}
-                                style={{ borderRadius: "5px" }}
-                              >
-                                Delete
-                              </Button>
-                            </div>
-                          ))}
+                                <p
+                                  style={{
+                                    margin: 0,
+                                    fontWeight: "bold",
+                                    color: "#007bff",
+                                  }}
+                                >
+                                  {rackIndex + 1} : {" " + rack.rack_id} (
+                                  {rack.kit_id})
+                                </p>
+                                <Button
+                                  variant="danger"
+                                  size="sm"
+                                  onClick={() => handleDeleteRack(rack)}
+                                  style={{ borderRadius: "5px" }}
+                                >
+                                  Delete
+                                </Button>
+                              </div>
+                            );
+                          })}
                         </div>
                       ))}
                   </div>

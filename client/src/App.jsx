@@ -58,7 +58,7 @@ function App() {
       group.racks.forEach((rack) => {
         rackObj.racks.push({
           rack_id: rack.rack_id,
-          device_id: rack.device_id,
+          kit_id: rack.KIT_ID,
         });
       });
       racksArray.push(rackObj);

@@ -1,24 +1,24 @@
 [
   {
-    "Group_id": "SS-1",
+    "Group_id": "s",
     "racks": [
       {
-        "rack_id": "rc-1",
+        "rack_id": "r1",
         "KIT_ID": "KT-13",
         "bins": [
           {
             "color": [
-              255,
+              0,
               0,
               255
             ],
             "colorESP": [
               0,
               0,
-              0
+              65
             ],
             "led_pin": 12,
-            "bin_id": "rc-1_01",
+            "bin_id": "r1_01",
             "button_pin": 13,
             "schedules": [
               {
@@ -28,15 +28,25 @@
                   255,
                   0,
                   0
+                ],
+                "colorESP": [
+                  65,
+                  0,
+                  0
                 ]
               },
               {
-                "time": "18:11",
+                "time": "18:15",
                 "enabled": true,
                 "color": [
-                  255,
+                  0,
                   0,
                   255
+                ],
+                "colorESP": [
+                  0,
+                  0,
+                  65
                 ]
               }
             ],
@@ -55,7 +65,7 @@
               0
             ],
             "led_pin": 25,
-            "bin_id": "rc-1_02",
+            "bin_id": "r1_02",
             "button_pin": 14,
             "schedules": [],
             "enabled": true,
@@ -73,7 +83,7 @@
               0
             ],
             "led_pin": 26,
-            "bin_id": "rc-1_03",
+            "bin_id": "r1_03",
             "button_pin": 15,
             "schedules": [],
             "enabled": true,
@@ -81,8 +91,8 @@
           },
           {
             "color": [
-              0,
-              0,
+              255,
+              255,
               255
             ],
             "colorESP": [
@@ -91,7 +101,7 @@
               0
             ],
             "led_pin": 27,
-            "bin_id": "rc-1_04",
+            "bin_id": "r1_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,

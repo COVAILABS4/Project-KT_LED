@@ -251,9 +251,10 @@ app.post("/bin/update/clicked", (req, res) => {
   // console.log(bin_queue[bin_idx]);
   console.log(bin_queue);
 
-  if (bin_queue[binIndex].length !== 0) {
-    let next_color = bin_queue[binIndex].shift();
-    bin.color = next_color;
+  if (bin_queue[rack.KIT_ID][binIndex].length !== 0) {
+    let next_color = bin_queue[rack.KIT_ID][binIndex].shift();
+    bin.color = next_color.color;
+    bin.colorESP = next_color.colorESP;
     bin.clicked = false;
   } else {
     bin.clicked = true;
@@ -382,11 +383,12 @@ app.post("/click/:id", (req, res) => {
   // If the rack and bin are found, update the clicked status
   if (foundRack && foundBin) {
     // console.log("1112", foundBin);
-    console.log(bin_queue[bin_idx]);
+    console.log(bin_queue[foundRack.KIT_ID][bin_idx]);
 
-    if (bin_queue[bin_idx].length !== 0) {
-      let next_color = bin_queue[bin_idx].shift();
-      foundBin.color = next_color;
+    if (bin_queue[foundRack.KIT_ID][bin_idx].length !== 0) {
+      let next_color = bin_queue[foundRack.KIT_ID][bin_idx].shift();
+      foundBin.color = next_color.color;
+      foundBin.colorESP = next_color.colorESP;
     } else {
       foundBin.clicked = true;
       // foundBin.color = next_color;
@@ -411,6 +413,19 @@ app.post("/new/rack", (req, res) => {
 
   // Get the current cache data
   var cache = get_data();
+
+  var bin_queue = get_bin_queue();
+
+  if (!bin_queue[kitId]) {
+    bin_queue[kitId] = {
+      0: [],
+      1: [],
+      2: [],
+      3: [],
+    }; // Initialize as an empty array if it doesn't exist
+  }
+
+  set_bin_queue(bin_queue);
 
   // Find the specified group
   const group = cache.find((group) => group.Group_id === Groupid);
@@ -486,6 +501,21 @@ app.post("/delete/rack", (req, res) => {
 
   // Save the updated cache
   set_data(cache);
+
+  var bin_queue = get_bin_queue();
+  console.log(bin_queue);
+
+  console.log(kitIdToRemove);
+
+  if (bin_queue["" + kitIdToRemove]) {
+    console.log(bin_queue["" + kitIdToRemove]);
+
+    delete bin_queue["" + kitIdToRemove];
+  }
+
+  console.log(bin_queue);
+
+  set_bin_queue(bin_queue);
 
   // Update click.json by removing the KIT_ID
   let clickData = get_click_data();
@@ -603,16 +633,29 @@ app.post("/new/group", (req, res) => {
 
 app.post("/delete/group", (req, res) => {
   const { groupId } = req.body;
-  const cache = get_data(); // Ensure cache is up-to-date
+  var cache = get_data(); // Ensure cache is up-to-date
+
+  var bin_queue = get_bin_queue();
+
+  var click = get_click_data();
 
   const groupIndex = cache.findIndex((group) => group.Group_id === groupId);
   if (groupIndex === -1) {
     return res.status(404).json({ error: "Group not found" });
   }
 
+  for (let index = 0; index < cache[groupIndex]["racks"].length; index++) {
+    console.log(bin_queue[cache[groupIndex]["racks"][index].KIT_ID]);
+
+    delete bin_queue[cache[groupIndex]["racks"][index].KIT_ID];
+    delete click[cache[groupIndex]["racks"][index].KIT_ID];
+  }
+
   // Remove the group from the data
   cache.splice(groupIndex, 1);
   set_data(cache);
+  set_click_data(click);
+  set_bin_queue(bin_queue);
 
   res.json({ message: "Group deleted successfully." });
 });
@@ -672,11 +715,16 @@ async function scheduleChecker() {
                   `Bin ${bin.bin_id} updated color to`,
                   schedule.color
                 );
+                bin.colorESP = schedule.colorESP;
                 bin.clicked = false; // Reset clicked status
               } else {
                 // Add color to queue for missed schedule
-                if (!binQueue[index]) binQueue[index] = [];
-                binQueue[index].push(schedule.color);
+                if (!binQueue[rack.KIT_ID][index])
+                  binQueue[rack.KIT_ID][index] = [];
+                binQueue[rack.KIT_ID][index].push({
+                  color: schedule.color,
+                  colorESP: schedule.colorESP,
+                });
                 console.log(
                   `Schedule missed for bin ${index}, color added to queue`
                 );
