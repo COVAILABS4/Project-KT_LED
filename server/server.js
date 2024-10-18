@@ -104,7 +104,7 @@ app.post("/import", upload.single("file"), (req, res) => {
     const cache = get_data();
     worksheet.forEach((row) => {
       const { group_id, rack_id, bin_id, schedule_time, color } = row;
-      const colorArray = color.split(",").map(Number);
+      // const colorArray = color.split(",").map(Number);
 
       const group = cache.find((group) => group.Group_id === group_id);
       if (!group) return;
@@ -115,12 +115,19 @@ app.post("/import", upload.single("file"), (req, res) => {
       const bin = rack.bins.find((bin) => bin.bin_id === bin_id);
       if (!bin) return;
 
-      // Add the schedule to the bin
-      bin.schedules.push({
+      function normalizeColor(color) {
+        return Math.round((color / 255) * 65);
+      }
+
+      const newSchedule = {
         time: schedule_time,
         enabled: true,
-        color: colorArray,
-      });
+        color: color.split(",").map(Number),
+        colorESP: color.split(",").map(Number).map(normalizeColor),
+      };
+
+      // Add the schedule to the bin
+      bin.schedules.push(newSchedule);
     });
 
     // Save updated data back to data.json
