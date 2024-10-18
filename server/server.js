@@ -21,31 +21,6 @@ const get_data = () => {
   }
 };
 
-const xlsx = require("xlsx");
-
-const readUsersFromExcel = () => {
-  const workbook = xlsx.readFile("user.xlsx");
-  const sheetName = workbook.SheetNames[0];
-  const sheet = workbook.Sheets[sheetName];
-  const users = xlsx.utils.sheet_to_json(sheet);
-  return users;
-};
-
-// Login route
-app.post("/login", (req, res) => {
-  const { email, password } = req.body;
-  const users = readUsersFromExcel();
-
-  const user = users.find((user) => user.Email === email);
-  if (user && password === user.Password) {
-    res.json({ success: true, user: { email: user.Email } });
-  } else {
-    res
-      .status(401)
-      .json({ success: false, message: "Invalid email or password" });
-  }
-});
-
 app.get("/get-time1", async (req, res) => {
   try {
     // Get the current time in Asia/Kolkata timezone and format it as ISO 8601
@@ -365,7 +340,7 @@ app.get("/get-data/:id", (req, res) => {
   if (foundRack) {
     res.json(foundRack);
   } else {
-    res.status(404).send({ message: "Rack not found" });
+    res.status(200).send({ message: "Rack not found" });
   }
 });
 
