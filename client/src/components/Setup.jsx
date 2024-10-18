@@ -108,7 +108,7 @@ const Setup = ({
       .post("http://" + ip + ":5000/new/rack", {
         Groupid: groupIdForWrack,
         newWrackid: newWrackId,
-        kitId: kitId,
+        kitId: `KT-${kitId}`,
       })
       .then((response) => {
         notify("Rack added successfully!", "success");
@@ -451,14 +451,16 @@ const Setup = ({
 
                 {/* Input for KIT_ID */}
                 <Form.Group controlId="kitId" style={{ marginTop: "20px" }}>
-                  <Form.Label>KIT ID</Form.Label>
+                  <Form.Label>KIT NO</Form.Label>
                   <Form.Control
-                    type="text"
+                    type="number"
                     value={kitId}
                     onChange={(e) => setKitId(e.target.value)}
                     placeholder="Enter KIT ID"
                   />
                 </Form.Group>
+
+                <p>{kitId === "" ? "" : `KIT ID :  KT-${kitId} `}</p>
 
                 {/* Button to Add Rack */}
                 <Button
