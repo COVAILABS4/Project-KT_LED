@@ -17,9 +17,5 @@ pm2 save
 
 
 
-
-# 1. Fetch the latest changes from the remote main branch
 git fetch origin main
-
-# 2. Merge and force it to accept all changes from origin/main (ignoring local conflicts)
-git merge -X theirs origin/main
+git reset --hard origin/main
