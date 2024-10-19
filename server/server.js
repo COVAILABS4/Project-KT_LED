@@ -5,7 +5,7 @@ const fs = require("fs");
 const cors = require("cors");
 const path = require("path");
 const moment = require("moment-timezone");
-const XLSX = require("xlsx");
+const xlsx = require("xlsx");
 app.use(cors());
 app.use(express.json()); // To handle JSON in POST/PUT requests
 
@@ -20,6 +20,29 @@ const get_data = () => {
     return null;
   }
 };
+
+const readUsersFromExcel = () => {
+  const workbook = xlsx.readFile("user.xlsx");
+  const sheetName = workbook.SheetNames[0];
+  const sheet = workbook.Sheets[sheetName];
+  const users = xlsx.utils.sheet_to_json(sheet);
+  return users;
+};
+
+// Login route
+app.post("/login", (req, res) => {
+  const { email, password } = req.body;
+  const users = readUsersFromExcel();
+
+  const user = users.find((user) => user.Email === email);
+  if (user && password === user.Password) {
+    res.json({ success: true, user: { email: user.Email } });
+  } else {
+    res
+      .status(401)
+      .json({ success: false, message: "Invalid email or password" });
+  }
+});
 
 app.get("/get-time1", async (req, res) => {
   try {
