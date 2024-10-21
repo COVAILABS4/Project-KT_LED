@@ -456,7 +456,7 @@ const Setup = ({
                     type="number"
                     value={kitId}
                     onChange={(e) => setKitId(e.target.value)}
-                    placeholder="Enter KIT ID"
+                    placeholder="Enter KIT No"
                   />
                 </Form.Group>
 

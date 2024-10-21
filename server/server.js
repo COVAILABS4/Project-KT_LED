@@ -586,31 +586,52 @@ app.post("/new/schedule", (req, res) => {
   const bin = rack.bins.find((bin) => bin.bin_id === bin_id);
   if (!bin) return res.status(404).json({ error: "Bin not found" });
 
-  // Find the correct position to insert the new schedule based on time
-  let inserted = false;
+  // Check if a schedule with the same time already exists, replace it if found
+  let replaced = false;
   for (let i = 0; i < bin.schedules.length; i++) {
     const existingTime = bin.schedules[i].time.split(":").map(Number);
     const newTime = new_schduled.time.split(":").map(Number);
 
-    console.log(existingTime, " - -  - ", newTime);
-
-    if (
-      newTime[0] < existingTime[0] ||
-      (newTime[0] === existingTime[0] && newTime[1] < existingTime[1])
-    ) {
-      bin.schedules.splice(i, 0, new_schduled); // Insert at the correct position
-      inserted = true;
+    if (existingTime[0] === newTime[0] && existingTime[1] === newTime[1]) {
+      // Replace the existing schedule with the new one
+      bin.schedules[i] = new_schduled;
+      replaced = true;
       break;
     }
   }
 
-  // If not inserted, push to the end (means it is the latest time)
-  if (!inserted) {
-    bin.schedules.push(new_schduled);
+  // If not replaced, find the correct position to insert the new schedule
+  if (!replaced) {
+    let inserted = false;
+    for (let i = 0; i < bin.schedules.length; i++) {
+      const existingTime = bin.schedules[i].time.split(":").map(Number);
+      const newTime = new_schduled.time.split(":").map(Number);
+
+      console.log(existingTime, " - -  - ", newTime);
+
+      if (
+        newTime[0] < existingTime[0] ||
+        (newTime[0] === existingTime[0] && newTime[1] < existingTime[1])
+      ) {
+        bin.schedules.splice(i, 0, new_schduled); // Insert at the correct position
+        inserted = true;
+        break;
+      }
+    }
+
+    // If not inserted, push to the end (means it is the latest time)
+    if (!inserted) {
+      bin.schedules.push(new_schduled);
+    }
   }
 
   set_data(cache);
-  res.json({ message: "Schedule added successfully", bin: bin });
+  res.json({
+    message: replaced
+      ? "Schedule replaced successfully"
+      : "Schedule added successfully",
+    bin: bin,
+  });
 });
 
 app.post("/delete/schedule", (req, res) => {
