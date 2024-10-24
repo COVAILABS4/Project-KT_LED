@@ -119,9 +119,9 @@ app.post("/import", upload.single("file"), (req, res) => {
 
   try {
     // Read the Excel file
-    const workbook = XLSX.readFile(file.path);
+    const workbook = xlsx.readFile(file.path);
     const sheetName = workbook.SheetNames[0];
-    const worksheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName]);
+    const worksheet = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     // Process each row in the Excel sheet
     const cache = get_data();
