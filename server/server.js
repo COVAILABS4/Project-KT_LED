@@ -510,7 +510,7 @@ app.post("/new/rack", (req, res) => {
     buzzer_on: false,
     relay_on: false,
   };
-
+  // Master
   if (isMaster) {
     newRack.master = true;
   }
