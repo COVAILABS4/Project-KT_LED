@@ -11,6 +11,13 @@ app.use(express.json()); // To handle JSON in POST/PUT requests
 
 const port = 5000;
 // Method to get data from data.json
+
+const RelayManager = require("./RelayManager");
+
+const waiting_time = 10;
+
+const relayManager = new RelayManager(waiting_time);
+
 const get_data = () => {
   try {
     const jsonData = fs.readFileSync("./data.json", "utf8");
@@ -20,6 +27,25 @@ const get_data = () => {
     return null;
   }
 };
+
+const processRelayData = () => {
+  const data = get_data();
+
+  data.forEach((group) => {
+    const group_id = group.Group_id;
+    // console.log(`Group ID: ${group_id}`);
+    relayManager.createGroup(group_id);
+
+    group.racks.forEach((rack) => {
+      const rack_id = rack.rack_id;
+
+      relayManager.createRack(group_id, rack_id);
+      // console.log(`${group_id}  - -  Rack ID: ${rack_id}`);
+    });
+  });
+};
+
+processRelayData();
 
 const readUsersFromExcel = () => {
   const workbook = xlsx.readFile("user.xlsx");
@@ -263,6 +289,7 @@ app.post("/bin/update/clicked", (req, res) => {
 
   const bin = rack.bins[binIndex];
   bin.clicked = true;
+  relayManager.changeState(group_id, rack_id, binIndex, "OFF");
 
   let kit_id = rack.KIT_ID;
 
@@ -286,6 +313,7 @@ app.post("/bin/update/clicked", (req, res) => {
     bin.color = next_color.color;
     bin.colorESP = next_color.colorESP;
     bin.clicked = false;
+    relayManager.changeState(group_id, rack_id, binIndex, "ON");
   } else {
     bin.clicked = true;
     // foundBin.color = next_color;
@@ -392,12 +420,15 @@ app.post("/click/:id", (req, res) => {
   let foundRack = null;
   let foundBin = null;
 
+  let foundGroupId = "";
+
   var bin_queue = get_bin_queue();
 
   // Search for the rack and bin matching the provided ids
   data.forEach((group) => {
     group.racks.forEach((rack) => {
       if (rack.KIT_ID === kitId && rack.rack_id === rack_id) {
+        foundGroupId = group.Group_id;
         foundRack = rack;
         console.log(foundRack);
 
@@ -421,6 +452,7 @@ app.post("/click/:id", (req, res) => {
       foundBin.colorESP = next_color.colorESP;
     } else {
       foundBin.clicked = true;
+      relayManager.changeState(foundGroupId, rack_id, bin_idx, "OFF");
       // foundBin.color = next_color;
     }
 
@@ -467,11 +499,21 @@ app.post("/new/rack", (req, res) => {
     return res.status(400).json({ error: "Rack already exists" });
   }
 
+  const isMaster = group.racks.length === 0;
+
   // Create the new rack
+
   const newRack = {
     rack_id: newWrackid,
     KIT_ID: kitId,
+    master: false,
+    buzzer_on: false,
+    relay_on: false,
   };
+
+  if (isMaster) {
+    newRack.master = true;
+  }
 
   const ledPins = [12, 25, 26, 27]; // Replace with your actual led pin values
   const buttonPins = [13, 14, 15, 16]; // Replace with your actual button pin values
@@ -501,6 +543,8 @@ app.post("/new/rack", (req, res) => {
   if (!clickData[kitId]) {
     clickData[kitId] = []; // Initialize as an empty array if it doesn't exist
   }
+
+  relayManager.createRack(Groupid, newWrackid);
 
   // Save the updated click data
   set_click_data(clickData);
@@ -557,6 +601,7 @@ app.post("/delete/rack", (req, res) => {
 
   // Save the updated click data
   set_click_data(clickData);
+  relayManager.removeRack(Groupid, rackId);
 
   res.json({ message: "Rack deleted successfully", rackId: rackId });
 });
@@ -679,6 +724,8 @@ app.post("/new/group", (req, res) => {
   data.push({ Group_id: newGroupId, racks: [] });
   set_data(data);
 
+  relayManager.createGroup(newGroupId);
+
   res.status(201).json({ message: "Station added successfully" });
 });
 
@@ -707,6 +754,8 @@ app.post("/delete/group", (req, res) => {
   set_data(cache);
   set_click_data(click);
   set_bin_queue(bin_queue);
+
+  relayManager.removeGroup(groupId);
 
   res.json({ message: "Group deleted successfully." });
 });
@@ -766,8 +815,15 @@ async function scheduleChecker() {
                   `Bin ${bin.bin_id} updated color to`,
                   schedule.color
                 );
+
                 bin.colorESP = schedule.colorESP;
                 bin.clicked = false; // Reset clicked status
+                relayManager.changeState(
+                  group.Group_id,
+                  rack.rack_id,
+                  index,
+                  "ON"
+                );
               } else {
                 // Add color to queue for missed schedule
                 if (!binQueue[rack.KIT_ID][index])
@@ -795,8 +851,62 @@ async function scheduleChecker() {
   }
 }
 
+// Function to check bins' clicked status and update buzzer status
+async function checkBinsAndUpdateBuzzer() {
+  while (true) {
+    console.log("Checking for Buzzer State");
+
+    let data = get_data();
+
+    for (let i = 0; i < data.length; i++) {
+      let group = data[i];
+      let anyClickedFalse = false;
+      for (let j = 0; j < group.racks.length; j++) {
+        let rack = group.racks[j];
+
+        for (let k = 0; k < rack.bins.length; k++) {
+          let bin = rack.bins[k];
+
+          if (!bin.clicked) {
+            anyClickedFalse = true;
+
+            break;
+          }
+        }
+
+        if (anyClickedFalse) break;
+      }
+
+      if (anyClickedFalse) {
+        console.log("Buzzer is On for " + group.Group_id);
+        group.racks[0].buzzer_on = true;
+      } else if (group.racks[0]) {
+        group.racks[0].buzzer_on = false;
+      }
+    }
+
+    set_data(data);
+
+    // Wait for the next minute before checking again
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+  }
+}
+
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
 
 scheduleChecker();
+
+checkBinsAndUpdateBuzzer();
+
+async function checkRelayStates() {
+  while (true) {
+    relayManager.checkGroupState();
+
+    relayManager.printGroupsAndRacks();
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+}
+
+checkRelayStates();

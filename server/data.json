@@ -1,18 +1,28 @@
 [
   {
-    "Group_id": "STA-1",
+    "Group_id": "ST1",
     "racks": [
       {
-        "rack_id": "8",
-        "KIT_ID": "KT-8",
+        "rack_id": "RC23",
+        "KIT_ID": "KT-23",
+        "master": true,
+        "buzzer_on": false,
+        "relay_on": false,
         "bins": [
           {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
+            "color": [255, 255, 0],
+            "colorESP": [65, 65, 0],
             "led_pin": 12,
-            "bin_id": "8_01",
+            "bin_id": "RC23_01",
             "button_pin": 13,
-            "schedules": [],
+            "schedules": [
+              {
+                "time": "16:00",
+                "enabled": true,
+                "color": [255, 255, 0],
+                "colorESP": [65, 65, 0]
+              }
+            ],
             "enabled": true,
             "clicked": true
           },
@@ -20,7 +30,7 @@
             "color": [255, 255, 255],
             "colorESP": [0, 0, 0],
             "led_pin": 25,
-            "bin_id": "8_02",
+            "bin_id": "RC23_02",
             "button_pin": 14,
             "schedules": [],
             "enabled": true,
@@ -30,7 +40,7 @@
             "color": [255, 255, 255],
             "colorESP": [0, 0, 0],
             "led_pin": 26,
-            "bin_id": "8_03",
+            "bin_id": "RC23_03",
             "button_pin": 15,
             "schedules": [],
             "enabled": true,
@@ -40,7 +50,7 @@
             "color": [255, 255, 255],
             "colorESP": [0, 0, 0],
             "led_pin": 27,
-            "bin_id": "8_04",
+            "bin_id": "RC23_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,
@@ -49,26 +59,43 @@
         ]
       },
       {
-        "rack_id": "14",
-        "KIT_ID": "KT-14",
+        "rack_id": "1",
+        "KIT_ID": "KT-1",
+        "master": false,
+        "buzzer_on": false,
+        "relay_on": false,
         "bins": [
           {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
+            "color": [0, 255, 255],
+            "colorESP": [0, 65, 65],
             "led_pin": 12,
-            "bin_id": "14_01",
+            "bin_id": "1_01",
             "button_pin": 13,
-            "schedules": [],
+            "schedules": [
+              {
+                "time": "16:10",
+                "enabled": true,
+                "color": [0, 255, 255],
+                "colorESP": [0, 65, 65]
+              }
+            ],
             "enabled": true,
             "clicked": true
           },
           {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
+            "color": [255, 0, 255],
+            "colorESP": [65, 0, 65],
             "led_pin": 25,
-            "bin_id": "14_02",
+            "bin_id": "1_02",
             "button_pin": 14,
-            "schedules": [],
+            "schedules": [
+              {
+                "time": "16:03",
+                "enabled": true,
+                "color": [255, 0, 255],
+                "colorESP": [65, 0, 65]
+              }
+            ],
             "enabled": true,
             "clicked": true
           },
@@ -76,7 +103,7 @@
             "color": [255, 255, 255],
             "colorESP": [0, 0, 0],
             "led_pin": 26,
-            "bin_id": "14_03",
+            "bin_id": "1_03",
             "button_pin": 15,
             "schedules": [],
             "enabled": true,
@@ -86,375 +113,7 @@
             "color": [255, 255, 255],
             "colorESP": [0, 0, 0],
             "led_pin": 27,
-            "bin_id": "14_04",
-            "button_pin": 16,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          }
-        ]
-      },
-      {
-        "rack_id": "47",
-        "KIT_ID": "KT-47",
-        "bins": [
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 12,
-            "bin_id": "47_01",
-            "button_pin": 13,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 25,
-            "bin_id": "47_02",
-            "button_pin": 14,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 26,
-            "bin_id": "47_03",
-            "button_pin": 15,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 27,
-            "bin_id": "47_04",
-            "button_pin": 16,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          }
-        ]
-      },
-      {
-        "rack_id": "65",
-        "KIT_ID": "KT-65",
-        "bins": [
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 12,
-            "bin_id": "65_01",
-            "button_pin": 13,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 25,
-            "bin_id": "65_02",
-            "button_pin": 14,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 26,
-            "bin_id": "65_03",
-            "button_pin": 15,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 27,
-            "bin_id": "65_04",
-            "button_pin": 16,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          }
-        ]
-      },
-      {
-        "rack_id": "20",
-        "KIT_ID": "KT-20",
-        "bins": [
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 12,
-            "bin_id": "20_01",
-            "button_pin": 13,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 25,
-            "bin_id": "20_02",
-            "button_pin": 14,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 26,
-            "bin_id": "20_03",
-            "button_pin": 15,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 27,
-            "bin_id": "20_04",
-            "button_pin": 16,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          }
-        ]
-      },
-      {
-        "rack_id": "7",
-        "KIT_ID": "KT-7",
-        "bins": [
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 12,
-            "bin_id": "7_01",
-            "button_pin": 13,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 25,
-            "bin_id": "7_02",
-            "button_pin": 14,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 26,
-            "bin_id": "7_03",
-            "button_pin": 15,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 27,
-            "bin_id": "7_04",
-            "button_pin": 16,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          }
-        ]
-      },
-      {
-        "rack_id": "28",
-        "KIT_ID": "KT-28",
-        "bins": [
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 12,
-            "bin_id": "28_01",
-            "button_pin": 13,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 25,
-            "bin_id": "28_02",
-            "button_pin": 14,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 26,
-            "bin_id": "28_03",
-            "button_pin": 15,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 27,
-            "bin_id": "28_04",
-            "button_pin": 16,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          }
-        ]
-      },
-      {
-        "rack_id": "56",
-        "KIT_ID": "KT-56",
-        "bins": [
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 12,
-            "bin_id": "56_01",
-            "button_pin": 13,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 25,
-            "bin_id": "56_02",
-            "button_pin": 14,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 26,
-            "bin_id": "56_03",
-            "button_pin": 15,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 27,
-            "bin_id": "56_04",
-            "button_pin": 16,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          }
-        ]
-      },
-      {
-        "rack_id": "67",
-        "KIT_ID": "KT-67",
-        "bins": [
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 12,
-            "bin_id": "67_01",
-            "button_pin": 13,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 25,
-            "bin_id": "67_02",
-            "button_pin": 14,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 26,
-            "bin_id": "67_03",
-            "button_pin": 15,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 27,
-            "bin_id": "67_04",
-            "button_pin": 16,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          }
-        ]
-      },
-      {
-        "rack_id": "13",
-        "KIT_ID": "KT-13",
-        "bins": [
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 12,
-            "bin_id": "13_01",
-            "button_pin": 13,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 25,
-            "bin_id": "13_02",
-            "button_pin": 14,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 26,
-            "bin_id": "13_03",
-            "button_pin": 15,
-            "schedules": [],
-            "enabled": true,
-            "clicked": true
-          },
-          {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
-            "led_pin": 27,
-            "bin_id": "13_04",
+            "bin_id": "1_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,
