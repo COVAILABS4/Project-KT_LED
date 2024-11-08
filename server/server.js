@@ -476,6 +476,25 @@ app.post("/new/rack", (req, res) => {
   // Get the current cache data
   var cache = get_data();
 
+  // Check if the kitId is already present in any group
+  const kitIdExists = cache.some((group) =>
+    group.racks.some((rack) => rack.KIT_ID === kitId)
+  );
+
+  if (kitIdExists) {
+    return res.status(400).json({ error: "Kit ID already exists" });
+  }
+
+  // Find the specified group
+  const group = cache.find((group) => group.Group_id === Groupid);
+  if (!group) return res.status(404).json({ error: "Group not found" });
+
+  // Check if rack already exists in the current group
+  const existingRack = group.racks.find((rack) => rack.rack_id === newWrackid);
+  if (existingRack) {
+    return res.status(400).json({ error: "Rack already exists" });
+  }
+
   var bin_queue = get_bin_queue();
 
   if (!bin_queue[kitId]) {
@@ -488,21 +507,9 @@ app.post("/new/rack", (req, res) => {
   }
 
   set_bin_queue(bin_queue);
-
-  // Find the specified group
-  const group = cache.find((group) => group.Group_id === Groupid);
-  if (!group) return res.status(404).json({ error: "Group not found" });
-
-  // Check if rack already exists in the current group
-  const existingRack = group.racks.find((rack) => rack.rack_id === newWrackid);
-  if (existingRack) {
-    return res.status(400).json({ error: "Rack already exists" });
-  }
-
   const isMaster = group.racks.length === 0;
 
   // Create the new rack
-
   const newRack = {
     rack_id: newWrackid,
     KIT_ID: kitId,
@@ -891,6 +898,54 @@ async function checkBinsAndUpdateBuzzer() {
     await new Promise((resolve) => setTimeout(resolve, 10000));
   }
 }
+
+const lengthFilePath = path.join(__dirname, "length.json");
+
+// Function to read the length from the JSON file
+const getLengthFromFile = () => {
+  try {
+    const data = fs.readFileSync(lengthFilePath, "utf8");
+    const parsedData = JSON.parse(data);
+    return parsedData.length;
+  } catch (err) {
+    console.error("Error reading the length file:", err);
+    return null;
+  }
+};
+
+// Function to write the new length to the JSON file
+const setLengthToFile = (newLength) => {
+  try {
+    const data = { length: newLength };
+    fs.writeFileSync(lengthFilePath, JSON.stringify(data, null, 2), "utf8");
+  } catch (err) {
+    console.error("Error writing to the length file:", err);
+  }
+};
+
+// Endpoint to get the length
+app.get("/get-length", (req, res) => {
+  const length = getLengthFromFile();
+  if (length !== null) {
+    res.json({ length });
+  } else {
+    res.status(500).json({ error: "Failed to read length from file" });
+  }
+});
+
+// Endpoint to set the length
+app.post("/set-length", (req, res) => {
+  const { newLength } = req.body;
+
+  // Validate that newLength is a number
+  if (typeof newLength !== "number") {
+    return res.status(400).json({ error: "Length must be a number" });
+  }
+
+  // Set the new length in the JSON file
+  setLengthToFile(newLength);
+  res.json({ message: "Length updated successfully", length: newLength });
+});
 
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);

@@ -1,56 +1,81 @@
 [
   {
-    "Group_id": "ST1",
+    "Group_id": "STA-1",
     "racks": [
       {
-        "rack_id": "RC23",
-        "KIT_ID": "KT-23",
+        "rack_id": "RC-1",
+        "KIT_ID": "KT-1",
         "master": true,
         "buzzer_on": false,
         "relay_on": false,
         "bins": [
           {
-            "color": [255, 255, 0],
-            "colorESP": [65, 65, 0],
-            "led_pin": 12,
-            "bin_id": "RC23_01",
-            "button_pin": 13,
-            "schedules": [
-              {
-                "time": "16:00",
-                "enabled": true,
-                "color": [255, 255, 0],
-                "colorESP": [65, 65, 0]
-              }
+            "color": [
+              255,
+              255,
+              255
             ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
+            "led_pin": 12,
+            "bin_id": "RC-1_01",
+            "button_pin": 13,
+            "schedules": [],
             "enabled": true,
             "clicked": true
           },
           {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
             "led_pin": 25,
-            "bin_id": "RC23_02",
+            "bin_id": "RC-1_02",
             "button_pin": 14,
             "schedules": [],
             "enabled": true,
             "clicked": true
           },
           {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
             "led_pin": 26,
-            "bin_id": "RC23_03",
+            "bin_id": "RC-1_03",
             "button_pin": 15,
             "schedules": [],
             "enabled": true,
             "clicked": true
           },
           {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
             "led_pin": 27,
-            "bin_id": "RC23_04",
+            "bin_id": "RC-1_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,
@@ -59,61 +84,246 @@
         ]
       },
       {
-        "rack_id": "1",
-        "KIT_ID": "KT-1",
+        "rack_id": "RC-2",
+        "KIT_ID": "KT-2",
         "master": false,
         "buzzer_on": false,
         "relay_on": false,
         "bins": [
           {
-            "color": [0, 255, 255],
-            "colorESP": [0, 65, 65],
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
             "led_pin": 12,
-            "bin_id": "1_01",
+            "bin_id": "RC-2_01",
             "button_pin": 13,
-            "schedules": [
-              {
-                "time": "16:10",
-                "enabled": true,
-                "color": [0, 255, 255],
-                "colorESP": [0, 65, 65]
-              }
-            ],
+            "schedules": [],
             "enabled": true,
             "clicked": true
           },
           {
-            "color": [255, 0, 255],
-            "colorESP": [65, 0, 65],
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
             "led_pin": 25,
-            "bin_id": "1_02",
+            "bin_id": "RC-2_02",
             "button_pin": 14,
-            "schedules": [
-              {
-                "time": "16:03",
-                "enabled": true,
-                "color": [255, 0, 255],
-                "colorESP": [65, 0, 65]
-              }
-            ],
+            "schedules": [],
             "enabled": true,
             "clicked": true
           },
           {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
             "led_pin": 26,
-            "bin_id": "1_03",
+            "bin_id": "RC-2_03",
             "button_pin": 15,
             "schedules": [],
             "enabled": true,
             "clicked": true
           },
           {
-            "color": [255, 255, 255],
-            "colorESP": [0, 0, 0],
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
             "led_pin": 27,
-            "bin_id": "1_04",
+            "bin_id": "RC-2_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": true
+          }
+        ]
+      },
+      {
+        "rack_id": "RC-4",
+        "KIT_ID": "KT-4",
+        "master": false,
+        "buzzer_on": false,
+        "relay_on": false,
+        "bins": [
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
+            "led_pin": 12,
+            "bin_id": "RC-4_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": true
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
+            "led_pin": 25,
+            "bin_id": "RC-4_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": true
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
+            "led_pin": 26,
+            "bin_id": "RC-4_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": true
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
+            "led_pin": 27,
+            "bin_id": "RC-4_04",
+            "button_pin": 16,
+            "schedules": [],
+            "enabled": true,
+            "clicked": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "Group_id": "STA-2",
+    "racks": [
+      {
+        "rack_id": "RC-3",
+        "KIT_ID": "KT-3",
+        "master": true,
+        "buzzer_on": false,
+        "relay_on": false,
+        "bins": [
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
+            "led_pin": 12,
+            "bin_id": "RC-3_01",
+            "button_pin": 13,
+            "schedules": [],
+            "enabled": true,
+            "clicked": true
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
+            "led_pin": 25,
+            "bin_id": "RC-3_02",
+            "button_pin": 14,
+            "schedules": [],
+            "enabled": true,
+            "clicked": true
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
+            "led_pin": 26,
+            "bin_id": "RC-3_03",
+            "button_pin": 15,
+            "schedules": [],
+            "enabled": true,
+            "clicked": true
+          },
+          {
+            "color": [
+              255,
+              255,
+              255
+            ],
+            "colorESP": [
+              0,
+              0,
+              0
+            ],
+            "led_pin": 27,
+            "bin_id": "RC-3_04",
             "button_pin": 16,
             "schedules": [],
             "enabled": true,
