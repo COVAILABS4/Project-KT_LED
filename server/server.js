@@ -912,11 +912,47 @@ const getLengthFromFile = () => {
     return null;
   }
 };
+const getRackLengthFromFile = () => {
+  try {
+    const data = fs.readFileSync(lengthFilePath, "utf8");
+    const parsedData = JSON.parse(data);
+    return parsedData.rack_length;
+  } catch (err) {
+    console.error("Error reading the length file:", err);
+    return null;
+  }
+};
+const getScheduleLengthFromFile = () => {
+  try {
+    const data = fs.readFileSync(lengthFilePath, "utf8");
+    const parsedData = JSON.parse(data);
+    return parsedData.schedule_length;
+  } catch (err) {
+    console.error("Error reading the length file:", err);
+    return null;
+  }
+};
+
+const getAllLengthData = () => {
+  try {
+    const data = fs.readFileSync(lengthFilePath, "utf8");
+    const parsedData = JSON.parse(data);
+    return parsedData;
+  } catch (err) {
+    console.error("Error reading the length file:", err);
+    return null;
+  }
+};
 
 // Function to write the new length to the JSON file
-const setLengthToFile = (newLength) => {
+const setLengthToFile = (newLength, type) => {
+  let data = getAllLengthData();
+
   try {
-    const data = { length: newLength };
+    if (type === "sta") data = { ...data, length: newLength };
+    else if (type === "rack") data = { ...data, rack_length: newLength };
+    else if (type === "sch") data = { ...data, schedule_length: newLength };
+
     fs.writeFileSync(lengthFilePath, JSON.stringify(data, null, 2), "utf8");
   } catch (err) {
     console.error("Error writing to the length file:", err);
@@ -924,8 +960,12 @@ const setLengthToFile = (newLength) => {
 };
 
 // Endpoint to get the length
-app.get("/get-length", (req, res) => {
-  const length = getLengthFromFile();
+app.get("/get-length/:type", (req, res) => {
+  const type = req.params.type;
+  let length = 0;
+  if (type === "sta") length = getLengthFromFile();
+  else if (type === "rack") length = getRackLengthFromFile();
+  else if (type === "sch") length = getScheduleLengthFromFile();
   if (length !== null) {
     res.json({ length });
   } else {
@@ -934,7 +974,9 @@ app.get("/get-length", (req, res) => {
 });
 
 // Endpoint to set the length
-app.post("/set-length", (req, res) => {
+app.post("/set-length/:type", (req, res) => {
+  const type = req.params.type;
+
   const { newLength } = req.body;
 
   // Validate that newLength is a number
@@ -943,7 +985,7 @@ app.post("/set-length", (req, res) => {
   }
 
   // Set the new length in the JSON file
-  setLengthToFile(newLength);
+  setLengthToFile(newLength, type);
   res.json({ message: "Length updated successfully", length: newLength });
 });
 

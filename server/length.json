@@ -1,3 +1,5 @@
 {
-  "length": 4
+  "length": 6,
+  "rack_length": 5,
+  "schedule_length": 20
 }

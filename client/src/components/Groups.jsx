@@ -14,7 +14,11 @@ const Groups = ({ data, handleBinClick }) => {
           <h3>{group.Group_id}</h3>
           <div className="group-tables">
             {group.racks.map((rack) => (
-              <table className="single-column-table" key={rack.rack_id}>
+              <table
+                className="single-column-table"
+                key={rack.rack_id}
+                style={{}}
+              >
                 <thead>
                   <tr>
                     <th>{rack.rack_id}</th>

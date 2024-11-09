@@ -8,6 +8,7 @@ import "./App.css";
 import axios from "axios";
 
 function App() {
+  const ip = window.location.hostname;
   const [data, setData] = useState([]);
   const [login, setLogined] = useState(localStorage.getItem("user"));
 
@@ -25,6 +26,39 @@ function App() {
   const [slaveDevices, setSlaveDevices] = useState([]);
 
   const [forSetIP, setForSetIP] = useState([]);
+
+  const [length, setLength] = useState(0);
+
+  // Function to fetch the current length from the API
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const fetchLength = async () => {
+    try {
+      const response = await axios.get("http://" + ip + ":5000/get-length/sta");
+      setLength(response.data.length); // Update the state with the fetched length
+    } catch (error) {
+      console.error("Error fetching length:", error);
+    }
+  };
+
+  // Function to set a new length via the API
+  const setLengthToAPI = async (newLength) => {
+    try {
+      const response = await axios.post(
+        "http://" + ip + ":5000/set-length/sta",
+        {
+          newLength,
+        }
+      );
+      setLength(response.data.length); // Update the state with the new length
+    } catch (error) {
+      console.error("Error setting length:", error);
+    }
+  };
+
+  // Fetch length when the component mounts
+  useEffect(() => {
+    fetchLength();
+  }, [fetchLength]);
 
   // setInterval(() => {
   //   fetchData();
@@ -93,7 +127,6 @@ function App() {
   };
 
   const fetchData = () => {
-    const ip = window.location.hostname;
     axios
       .get(`http://${ip}:5000/data`)
       .then((response) => {
@@ -123,6 +156,10 @@ function App() {
               forSetIP={forSetIP}
               AllStaticDevices={AllStaticDevices}
               slaveDevices={slaveDevices}
+              setLengthToAPI={setLengthToAPI}
+              fetchLength={fetchLength}
+              length={length}
+              // data={data}
             />
           }
         />

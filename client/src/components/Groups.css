@@ -24,9 +24,11 @@
   .single-column-table {
     display: inline-block;
     vertical-align: top;
-    margin-right: 10px;
+    margin: 20px;
     table-layout: fixed;
-    width: 100px; 
+    width: auto; 
+    /* gap: 20px; */
+    
     
   }
   
