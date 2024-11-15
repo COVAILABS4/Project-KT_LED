@@ -14,7 +14,7 @@ const port = 5000;
 
 const RelayManager = require("./RelayManager");
 
-const waiting_time = 10;
+const waiting_time = 120;
 
 const relayManager = new RelayManager(waiting_time);
 
@@ -138,7 +138,6 @@ app.put("/bin/update/schedule", (req, res) => {
 
 const upload = multer({ dest: "uploads/" });
 
-// Import Excel and process data
 app.post("/import", upload.single("file"), (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: "No file uploaded." });
@@ -153,7 +152,6 @@ app.post("/import", upload.single("file"), (req, res) => {
     const cache = get_data();
     worksheet.forEach((row) => {
       const { group_id, rack_id, bin_id, schedule_time, color } = row;
-      // const colorArray = color.split(",").map(Number);
 
       const group = cache.find((group) => group.Group_id === group_id);
       if (!group) return;
@@ -175,8 +173,42 @@ app.post("/import", upload.single("file"), (req, res) => {
         colorESP: color.split(",").map(Number).map(normalizeColor),
       };
 
-      // Add the schedule to the bin
-      bin.schedules.push(newSchedule);
+      // Check if a schedule with the same time already exists, replace it if found
+      let replaced = false;
+      for (let i = 0; i < bin.schedules.length; i++) {
+        const existingTime = bin.schedules[i].time.split(":").map(Number);
+        const newTime = schedule_time.split(":").map(Number);
+
+        if (existingTime[0] === newTime[0] && existingTime[1] === newTime[1]) {
+          // Replace the existing schedule with the new one
+          bin.schedules[i] = newSchedule;
+          replaced = true;
+          break;
+        }
+      }
+
+      // If not replaced, find the correct position to insert the new schedule
+      if (!replaced) {
+        let inserted = false;
+        for (let i = 0; i < bin.schedules.length; i++) {
+          const existingTime = bin.schedules[i].time.split(":").map(Number);
+          const newTime = schedule_time.split(":").map(Number);
+
+          if (
+            newTime[0] < existingTime[0] ||
+            (newTime[0] === existingTime[0] && newTime[1] < existingTime[1])
+          ) {
+            bin.schedules.splice(i, 0, newSchedule); // Insert at the correct position
+            inserted = true;
+            break;
+          }
+        }
+
+        // If not inserted, push to the end (means it is the latest time)
+        if (!inserted) {
+          bin.schedules.push(newSchedule);
+        }
+      }
     });
 
     // Save updated data back to data.json
@@ -192,7 +224,7 @@ app.post("/import", upload.single("file"), (req, res) => {
       }
     });
 
-    res.json({ message: "File processed successfully." });
+    res.json({ message: "File processed successfully and schedules sorted." });
   } catch (error) {
     console.error("Error processing file:", error);
     res.status(500).json({ error: "Failed to process file." });
