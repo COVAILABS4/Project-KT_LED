@@ -973,14 +973,16 @@ const Setup = ({
                                     {rackIndex + 1} : {" " + rack.rack_id} (
                                     {rack.kit_id})
                                   </p>
-                                  <Button
-                                    variant="danger"
-                                    size="sm"
-                                    onClick={() => handleDeleteRack(rack)}
-                                    style={{ borderRadius: "5px" }}
-                                  >
-                                    Delete
-                                  </Button>
+                                  {rackIndex !== 0 && (
+                                    <Button
+                                      variant="danger"
+                                      size="sm"
+                                      onClick={() => handleDeleteRack(rack)}
+                                      style={{ borderRadius: "5px" }}
+                                    >
+                                      Delete
+                                    </Button>
+                                  )}
                                 </div>
                               );
                             })}
