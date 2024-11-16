@@ -14,7 +14,7 @@ const port = 5000;
 
 const RelayManager = require("./RelayManager");
 
-const waiting_time = 120;
+const waiting_time = 600;
 
 const relayManager = new RelayManager(waiting_time);
 
