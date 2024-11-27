@@ -3,18 +3,84 @@
 const { group } = require("console");
 const fs = require("fs");
 
-const get_data = () => {
+const dataPath = "./data.json";
+const backupPath = "./data-back.json";
+
+const get_data = async () => {
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)); // Helper for waiting
+
   try {
-    const jsonData = fs.readFileSync("./data.json", "utf8");
-    return JSON.parse(jsonData);
+    const readDataFile = () => {
+      const jsonData = fs.readFileSync(dataPath, "utf8");
+      return JSON.parse(jsonData);
+    };
+
+    // Attempt initial read of data.json
+    let parsedData = null;
+    try {
+      parsedData = readDataFile();
+    } catch (err) {
+      console.error("Error reading data.json on first attempt:", err);
+    }
+
+    // Check validity of initial read
+    if (
+      parsedData === null ||
+      parsedData === undefined ||
+      (typeof parsedData !== "object" && !Array.isArray(parsedData))
+    ) {
+      console.warn("data.json is invalid or empty. Retrying in 5 seconds...");
+      await wait(5000); // Wait for 5 seconds
+
+      // Retry reading data.json
+      try {
+        parsedData = readDataFile();
+      } catch (err) {
+        console.error("Error reading data.json on retry:", err);
+      }
+
+      // Validate data after retry
+      if (
+        parsedData === null ||
+        parsedData === undefined ||
+        (typeof parsedData !== "object" && !Array.isArray(parsedData))
+      ) {
+        console.warn(
+          "data.json is still invalid or empty. Falling back to data-back.json..."
+        );
+
+        // Read data-back.json and restore data.json
+        try {
+          const backupData = fs.readFileSync(backupPath, "utf8");
+          const parsedBackupData = JSON.parse(backupData);
+
+          // Write backup data to data.json
+          fs.writeFileSync(
+            dataPath,
+            JSON.stringify(parsedBackupData, null, 2),
+            "utf8"
+          );
+          console.log("Restored data.json from data-back.json!");
+
+          return parsedBackupData; // Return backup data
+        } catch (err) {
+          console.error("Error reading or restoring from data-back.json:", err);
+          return null; // Return null if both fail
+        }
+      }
+    }
+
+    console.log("Data successfully read from data.json!");
+    return parsedData; // Return valid data
   } catch (err) {
-    console.error("Error reading JSON file:", err);
-    return null;
+    console.error("Unexpected error:", err);
+    return null; // Return null in case of unexpected error
   }
 };
 
-
 const set_data = (newData) => {
+  console.log("Data Updating");
+
   if (newData === null || newData === undefined) {
     console.error(
       "Invalid data: newData is null or undefined. Aborting write."
@@ -23,14 +89,38 @@ const set_data = (newData) => {
   }
 
   try {
-    fs.writeFileSync("./data.json", JSON.stringify(newData, null, 2), "utf8");
-    console.log("Data successfully updated!");
+    // Read current content of data.json and data-back.json
+    const currentData = fs.existsSync(dataPath)
+      ? JSON.parse(fs.readFileSync(dataPath, "utf8"))
+      : null;
+    const backupData = fs.existsSync(backupPath)
+      ? JSON.parse(fs.readFileSync(backupPath, "utf8"))
+      : null;
+
+    // Compare newData with the current data.json and data-back.json
+    if (
+      JSON.stringify(newData) === JSON.stringify(currentData) &&
+      JSON.stringify(newData) === JSON.stringify(backupData)
+    ) {
+      console.log("No changes detected. Data is already up to date.");
+      return true;
+    }
+
+    // Write newData to data.json
+    fs.writeFileSync(dataPath, JSON.stringify(newData, null, 2), "utf8");
+    console.log("Data successfully written to data.json!");
+
+    // Replicate newData to data-back.json
+    fs.writeFileSync(backupPath, JSON.stringify(newData, null, 2), "utf8");
+    console.log("Backup successfully created in data-back.json!");
+
     return true;
   } catch (err) {
     console.error("Error writing to JSON file:", err);
     return false;
   }
 };
+
 class RelayManager {
   constructor(waitingTime = 10) {
     this.waitingTime = waitingTime; // Default waiting time in minutes
@@ -129,9 +219,9 @@ class RelayManager {
     }
   }
 
-  turnOnRelay(groupId) {
+  async turnOnRelay(groupId) {
     console.log(`Group ${groupId} Relay State: ON`);
-    let cache = get_data();
+    let cache = await get_data();
 
     let group = cache.find((group) => group.Group_id === groupId);
 
@@ -140,8 +230,8 @@ class RelayManager {
     set_data(cache);
   }
 
-  turnOffRelay(groupId) {
-    let cache = get_data();
+  async turnOffRelay(groupId) {
+    let cache = await get_data();
 
     let group = cache.find((group) => group.Group_id === groupId);
 

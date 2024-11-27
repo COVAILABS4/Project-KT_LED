@@ -18,18 +18,128 @@ const waiting_time = 600;
 
 const relayManager = new RelayManager(waiting_time);
 
-const get_data = () => {
+const dataPath = "./data.json";
+const backupPath = "./data-back.json";
+
+const get_data = async () => {
+  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms)); // Helper for waiting
+
   try {
-    const jsonData = fs.readFileSync("./data.json", "utf8");
-    return JSON.parse(jsonData);
+    const readDataFile = () => {
+      const jsonData = fs.readFileSync(dataPath, "utf8");
+      return JSON.parse(jsonData);
+    };
+
+    // Attempt initial read of data.json
+    let parsedData = null;
+    try {
+      parsedData = readDataFile();
+    } catch (err) {
+      console.error("Error reading data.json on first attempt:", err);
+    }
+
+    // Check validity of initial read
+    if (
+      parsedData === null ||
+      parsedData === undefined ||
+      (typeof parsedData !== "object" && !Array.isArray(parsedData))
+    ) {
+      console.warn("data.json is invalid or empty. Retrying in 5 seconds...");
+      await wait(5000); // Wait for 5 seconds
+
+      // Retry reading data.json
+      try {
+        parsedData = readDataFile();
+      } catch (err) {
+        console.error("Error reading data.json on retry:", err);
+      }
+
+      // Validate data after retry
+      if (
+        parsedData === null ||
+        parsedData === undefined ||
+        (typeof parsedData !== "object" && !Array.isArray(parsedData))
+      ) {
+        console.warn(
+          "data.json is still invalid or empty. Falling back to data-back.json..."
+        );
+
+        // Read data-back.json and restore data.json
+        try {
+          const backupData = fs.readFileSync(backupPath, "utf8");
+          const parsedBackupData = JSON.parse(backupData);
+
+          // Write backup data to data.json
+          fs.writeFileSync(
+            dataPath,
+            JSON.stringify(parsedBackupData, null, 2),
+            "utf8"
+          );
+          console.log("Restored data.json from data-back.json!");
+
+          return parsedBackupData; // Return backup data
+        } catch (err) {
+          console.error("Error reading or restoring from data-back.json:", err);
+          return null; // Return null if both fail
+        }
+      }
+    }
+
+    console.log("Data successfully read from data.json!");
+    return parsedData; // Return valid data
   } catch (err) {
-    console.error("Error reading JSON file:", err);
-    return null;
+    console.error("Unexpected error:", err);
+    return null; // Return null in case of unexpected error
   }
 };
 
-const processRelayData = () => {
-  const data = get_data();
+const set_data = (newData) => {
+  console.log("Data Updating");
+
+  if (newData === null || newData === undefined) {
+    console.error(
+      "Invalid data: newData is null or undefined. Aborting write."
+    );
+    return false;
+  }
+
+  try {
+    // Read current content of data.json and data-back.json
+    const currentData = fs.existsSync(dataPath)
+      ? JSON.parse(fs.readFileSync(dataPath, "utf8"))
+      : null;
+    const backupData = fs.existsSync(backupPath)
+      ? JSON.parse(fs.readFileSync(backupPath, "utf8"))
+      : null;
+
+    // Compare newData with the current data.json and data-back.json
+    if (
+      JSON.stringify(newData) === JSON.stringify(currentData) &&
+      JSON.stringify(newData) === JSON.stringify(backupData)
+    ) {
+      console.log("No changes detected. Data is already up to date.");
+      return true;
+    }
+
+    // Write newData to data.json
+    fs.writeFileSync(dataPath, JSON.stringify(newData, null, 2), "utf8");
+    console.log("Data successfully written to data.json!");
+
+    // Replicate newData to data-back.json
+    fs.writeFileSync(backupPath, JSON.stringify(newData, null, 2), "utf8");
+    console.log("Backup successfully created in data-back.json!");
+
+    return true;
+  } catch (err) {
+    console.error("Error writing to JSON file:", err);
+    return false;
+  }
+};
+
+const processRelayData = async () => {
+  const data = await get_data();
+
+  console.log(data);
 
   data.forEach((group) => {
     const group_id = group.Group_id;
@@ -84,9 +194,9 @@ app.get("/get-time1", async (req, res) => {
   }
 });
 
-app.get("/bin", (req, res) => {
+app.get("/bin", async (req, res) => {
   const { group_id, rack_id, bin_id } = req.query;
-  const cache = get_data(); // Ensure cache is up-to-date
+  const cache = await get_data(); // Ensure cache is up-to-date
 
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
@@ -104,7 +214,7 @@ app.get("/bin", (req, res) => {
 });
 
 // Update bin schedule
-app.put("/bin/update/schedule", (req, res) => {
+app.put("/bin/update/schedule", async (req, res) => {
   const { group_id, rack_id, bin_id, scheduled_index, current_enabled_status } =
     req.body;
 
@@ -116,7 +226,7 @@ app.put("/bin/update/schedule", (req, res) => {
     current_enabled_status
   );
 
-  var cache = get_data(); // Ensure cache is up-to-date
+  var cache = await get_data(); // Ensure cache is up-to-date
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
 
@@ -138,7 +248,7 @@ app.put("/bin/update/schedule", (req, res) => {
 
 const upload = multer({ dest: "uploads/" });
 
-app.post("/import", upload.single("file"), (req, res) => {
+app.post("/import", upload.single("file"), async (req, res) => {
   const file = req.file;
   if (!file) return res.status(400).json({ error: "No file uploaded." });
 
@@ -149,7 +259,7 @@ app.post("/import", upload.single("file"), (req, res) => {
     const worksheet = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     // Process each row in the Excel sheet
-    const cache = get_data();
+    const cache = await get_data();
     worksheet.forEach((row) => {
       const { group_id, rack_id, bin_id, schedule_time, color } = row;
 
@@ -243,9 +353,9 @@ app.get("/download-sample", (req, res) => {
 });
 // Update bin color
 
-app.post("/bin/update/enabled", (req, res) => {
+app.post("/bin/update/enabled", async (req, res) => {
   const { group_id, rack_id, bin_id } = req.body;
-  var cache = get_data(); // Ensure cache is up-to-date
+  var cache = await get_data(); // Ensure cache is up-to-date
 
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
@@ -303,9 +413,9 @@ function set_click_data(newData) {
 }
 
 // Updated endpoint to handle bin clicks
-app.post("/bin/update/clicked", (req, res) => {
+app.post("/bin/update/clicked", async (req, res) => {
   const { group_id, rack_id, bin_id } = req.body;
-  var cache = get_data(); // Ensure cache is up-to-date
+  var cache = await get_data(); // Ensure cache is up-to-date
 
   const group = cache.find((group) => group.Group_id === group_id);
   if (!group) return res.status(404).json({ error: "Group not found" });
@@ -392,33 +502,13 @@ app.get("/get-click/:id", (req, res) => {
   }
 });
 
-console.log("SETTING FInish");
-
-const set_data = (newData) => {
-  if (newData === null || newData === undefined) {
-    console.error(
-      "Invalid data: newData is null or undefined. Aborting write."
-    );
-    return false;
-  }
-
-  try {
-    fs.writeFileSync("./data.json", JSON.stringify(newData, null, 2), "utf8");
-    console.log("Data successfully updated!");
-    return true;
-  } catch (err) {
-    console.error("Error writing to JSON file:", err);
-    return false;
-  }
-};
-
 // Endpoint to get rack details by KIT_ID
-app.get("/get-data/:id", (req, res) => {
+app.get("/get-data/:id", async (req, res) => {
   const kitId = req.params.id;
   console.log("Called - - -", kitId);
 
   // Use get_data() to fetch the latest data
-  const data = get_data();
+  const data = await get_data();
   if (!data) {
     res.status(500).send({ message: "Error reading data" });
     return;
@@ -443,7 +533,7 @@ app.get("/get-data/:id", (req, res) => {
 });
 
 // New endpoint to update the clicked status of a bin
-app.post("/click/:id", (req, res) => {
+app.post("/click/:id", async (req, res) => {
   const kitId = req.params.id;
   const { rack_id, bin_idx } = req.body; // Extracting rack_id and bin_id from the request body
 
@@ -452,7 +542,7 @@ app.post("/click/:id", (req, res) => {
   );
 
   // Use get_data() to fetch the latest data
-  const data = get_data();
+  const data = await get_data();
   if (!data) {
     return res.status(500).send({ message: "Error reading data" });
   }
@@ -509,12 +599,12 @@ app.post("/click/:id", (req, res) => {
   }
 });
 
-app.post("/new/rack", (req, res) => {
+app.post("/new/rack", async (req, res) => {
   const { Groupid, newWrackid, kitId } = req.body;
   console.log(Groupid, newWrackid);
 
   // Get the current cache data
-  var cache = get_data();
+  var cache = await get_data();
 
   // Check if the kitId is already present in any group
   const kitIdExists = cache.some((group) =>
@@ -599,11 +689,11 @@ app.post("/new/rack", (req, res) => {
   res.json({ message: "Rack added successfully", rack: newRack });
 });
 
-app.post("/delete/rack", (req, res) => {
+app.post("/delete/rack", async (req, res) => {
   const { Groupid, rackId } = req.body;
   console.log(Groupid, rackId);
 
-  var cache = get_data();
+  var cache = await get_data();
   const group = cache.find((group) => group.Group_id === Groupid);
   if (!group) {
     return res.status(404).json({ error: "Group not found" });
@@ -654,18 +744,18 @@ app.post("/delete/rack", (req, res) => {
 });
 
 // Get data route
-app.get("/data", (req, res) => {
+app.get("/data", async (req, res) => {
   try {
-    const data = get_data();
+    const data = await get_data();
     res.json(data);
   } catch (error) {
     res.status(500).send("Error reading data.json");
   }
 });
 
-app.post("/new/schedule", (req, res) => {
+app.post("/new/schedule", async (req, res) => {
   const { group_id, wrack_id, bin_id, new_schduled } = req.body;
-  var cache = get_data();
+  var cache = await get_data();
 
   console.log(group_id, wrack_id, bin_id, new_schduled);
 
@@ -726,10 +816,10 @@ app.post("/new/schedule", (req, res) => {
   });
 });
 
-app.post("/delete/schedule", (req, res) => {
+app.post("/delete/schedule", async (req, res) => {
   const { group_id, wrack_id, bin_id, scheduleIndex } = req.body;
 
-  var cache = get_data();
+  var cache = await get_data();
 
   console.log(group_id, wrack_id, bin_id, scheduleIndex);
 
@@ -755,7 +845,7 @@ app.post("/delete/schedule", (req, res) => {
 });
 
 // Endpoint to add a new station
-app.post("/new/group", (req, res) => {
+app.post("/new/group", async (req, res) => {
   const { newGroupId } = req.body;
   console.log(req.body);
 
@@ -763,7 +853,7 @@ app.post("/new/group", (req, res) => {
     return res.status(400).json({ error: "Station Name is required" });
   }
 
-  const data = get_data();
+  const data = await get_data();
   if (data.find((group) => group.Group_id === newGroupId)) {
     return res.status(400).json({ error: "Station already exists" });
   }
@@ -776,9 +866,9 @@ app.post("/new/group", (req, res) => {
   res.status(201).json({ message: "Station added successfully" });
 });
 
-app.post("/delete/group", (req, res) => {
+app.post("/delete/group", async (req, res) => {
   const { groupId } = req.body;
-  var cache = get_data(); // Ensure cache is up-to-date
+  var cache = await get_data(); // Ensure cache is up-to-date
 
   var bin_queue = get_bin_queue();
 
@@ -836,7 +926,7 @@ function set_bin_queue(binQueue) {
 }
 async function scheduleChecker() {
   while (true) {
-    const cache = get_data();
+    const cache = await get_data();
     const currentTime = new Date();
     const currentHour = String(currentTime.getHours()).padStart(2, "0");
     const currentMinute = String(currentTime.getMinutes()).padStart(2, "0");
@@ -905,7 +995,7 @@ async function checkBinsAndUpdateBuzzer() {
   while (true) {
     console.log("Checking for Buzzer State");
 
-    let data = get_data();
+    let data = await get_data();
 
     for (let i = 0; i < data.length; i++) {
       let group = data[i];
