@@ -392,8 +392,16 @@ app.get("/get-click/:id", (req, res) => {
   }
 });
 
-// Method to set data in data.json
+console.log("SETTING FInish");
+
 const set_data = (newData) => {
+  if (newData === null || newData === undefined) {
+    console.error(
+      "Invalid data: newData is null or undefined. Aborting write."
+    );
+    return false;
+  }
+
   try {
     fs.writeFileSync("./data.json", JSON.stringify(newData, null, 2), "utf8");
     console.log("Data successfully updated!");
@@ -890,6 +898,8 @@ async function scheduleChecker() {
   }
 }
 
+console.log("Buzzer Changed");
+
 // Function to check bins' clicked status and update buzzer status
 async function checkBinsAndUpdateBuzzer() {
   while (true) {
@@ -918,7 +928,7 @@ async function checkBinsAndUpdateBuzzer() {
 
       if (anyClickedFalse) {
         console.log("Buzzer is On for " + group.Group_id);
-        group.racks[0].buzzer_on = true;
+        group.racks[0].buzzer_on = false;
       } else if (group.racks[0]) {
         group.racks[0].buzzer_on = false;
       }

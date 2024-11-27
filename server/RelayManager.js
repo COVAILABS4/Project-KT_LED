@@ -13,8 +13,15 @@ const get_data = () => {
   }
 };
 
-// Method to set data in data.json
+
 const set_data = (newData) => {
+  if (newData === null || newData === undefined) {
+    console.error(
+      "Invalid data: newData is null or undefined. Aborting write."
+    );
+    return false;
+  }
+
   try {
     fs.writeFileSync("./data.json", JSON.stringify(newData, null, 2), "utf8");
     console.log("Data successfully updated!");
@@ -24,7 +31,6 @@ const set_data = (newData) => {
     return false;
   }
 };
-
 class RelayManager {
   constructor(waitingTime = 10) {
     this.waitingTime = waitingTime; // Default waiting time in minutes
