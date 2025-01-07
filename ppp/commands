@@ -1,6 +1,6 @@
 cd /home/KRISHTEC/Project-KT_LED/server
 
-
+ 
 pm2 start npm --name "node-server" -- start
 
 
