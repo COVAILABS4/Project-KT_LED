@@ -1,0 +1,7 @@
+[
+  { "time": "10:54", "color": [65, 42, 0], "enabled": true },
+  { "time": "13:10", "color": [0, 0, 65], "enabled": true },
+  { "time": "13:12", "color": [65, 65, 65], "enabled": true },
+  { "time": "13:12", "color": [65, 42, 0], "enabled": true },
+  { "time": "13:21", "color": [65, 65, 65], "enabled": true }
+]

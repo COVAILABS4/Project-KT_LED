@@ -1,0 +1,34 @@
+[
+  {
+    "color": [0, 0, 0],
+    "led_pin": 12,
+    "button_pin": 13,
+    "schedules": [],
+    "enabled": true,
+    "clicked": false
+  },
+  {
+    "color": [0, 0, 0],
+    "led_pin": 25,
+    "button_pin": 14,
+    "schedules": [],
+    "enabled": true,
+    "clicked": false
+  },
+  {
+    "color": [0, 0, 0],
+    "led_pin": 26,
+    "button_pin": 15,
+    "schedules": [],
+    "enabled": true,
+    "clicked": false
+  },
+  {
+    "color": [0, 0, 0],
+    "led_pin": 27,
+    "button_pin": 16,
+    "schedules": [],
+    "enabled": true,
+    "clicked": false
+  }
+]

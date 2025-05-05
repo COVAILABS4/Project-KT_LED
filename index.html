@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Configuration</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .button-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 50px;
+        }
+        button {
+            padding: 15px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .form-container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-top: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="password"],
+        input[type="number"],
+        input[type="time"],
+        input[type="color"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            margin: 20px 0;
+        }
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+            margin: 0 10px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #2196F3;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        .schedule-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+        .schedule-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+        .delete-btn {
+            background-color: #f44336;
+        }
+        .delete-btn:hover {
+            background-color: #d32f2f;
+        }
+        .add-btn {
+            background-color: #2196F3;
+            margin-top: 10px;
+        }
+        .add-btn:hover {
+            background-color: #0b7dda;
+        }
+        .back-btn {
+            background-color: #555;
+            margin-bottom: 20px;
+        }
+        .back-btn:hover {
+            background-color: #333;
+        }
+        .toggle-all-btn {
+            background-color: #ff9800;
+            margin-bottom: 20px;
+        }
+        .toggle-all-btn:hover {
+            background-color: #e68a00;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Main Menu -->
+    <div id="main-menu" class="button-container">
+        <h1>Device Configuration</h1>
+        <button id="setup-ap-btn">Setup AP</button>
+        <button id="setup-schedule-btn">Setup Schedule</button>
+    </div>
+
+    <!-- AP Setup Form -->
+    <div id="ap-setup" class="hidden">
+        <button class="back-btn" onclick="showMainMenu()">← Back</button>
+        <div class="form-container">
+            <h2>Access Point Configuration</h2>
+            <div class="toggle-container">
+                <span>View Mode</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="edit-toggle">
+                    <span class="slider"></span>
+                </label>
+                <span>Edit Mode</span>
+            </div>
+            <div class="form-group">
+                <label for="ssid">SSID:</label>
+                <input type="text" id="ssid" disabled>
+            </div>
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" disabled>
+            </div>
+            <div class="form-group">
+                <label for="kit-no">Kit Number:</label>
+                <input type="number" id="kit-no" disabled>
+            </div>
+            <div class="form-group">
+                <label for="static-no">Static Number:</label>
+                <input type="number" id="static-no" disabled>
+            </div>
+            <button id="save-ap-btn" class="hidden">Save Configuration</button>
+        </div>
+    </div>
+
+    <!-- Schedule Setup -->
+    <div id="schedule-setup" class="hidden">
+        <button class="back-btn" onclick="showMainMenu()">← Back</button>
+        <div class="form-container">
+            <h2>Schedule Configuration</h2>
+            <button class="toggle-all-btn" id="toggle-all-btn">Enable All</button>
+            <div id="schedule-items-container">
+                <!-- Schedule items will be added here dynamically -->
+            </div>
+            <button class="add-btn" id="add-schedule-btn">+ Add New Schedule</button>
+            <button id="save-schedule-btn">Save Schedule</button>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const mainMenu = document.getElementById('main-menu');
+        const apSetup = document.getElementById('ap-setup');
+        const scheduleSetup = document.getElementById('schedule-setup');
+        const setupApBtn = document.getElementById('setup-ap-btn');
+        const setupScheduleBtn = document.getElementById('setup-schedule-btn');
+        const editToggle = document.getElementById('edit-toggle');
+        const saveApBtn = document.getElementById('save-ap-btn');
+        const addScheduleBtn = document.getElementById('add-schedule-btn');
+        const saveScheduleBtn = document.getElementById('save-schedule-btn');
+        const toggleAllBtn = document.getElementById('toggle-all-btn');
+        const scheduleItemsContainer = document.getElementById('schedule-items-container');
+
+        // Form fields
+        const ssidInput = document.getElementById('ssid');
+        const passwordInput = document.getElementById('password');
+        const kitNoInput = document.getElementById('kit-no');
+        const staticNoInput = document.getElementById('static-no');
+
+        // Configuration data
+        let apConfig = {
+            SSID: "KT-AP",
+            PASSWORD: "1234567890",
+            KIT_NO: "1",
+            STATIC_NO: "1"
+        };
+        let scheduleData = [];
+        let allEnabled = false;
+
+        // Event Listeners
+        setupApBtn.addEventListener('click', showApSetup);
+        setupScheduleBtn.addEventListener('click', showScheduleSetup);
+        editToggle.addEventListener('change', toggleEditMode);
+        saveApBtn.addEventListener('click', saveApConfig);
+        addScheduleBtn.addEventListener('click', addNewScheduleItem);
+        saveScheduleBtn.addEventListener('click', saveScheduleData);
+        toggleAllBtn.addEventListener('click', toggleAllSchedules);
+
+        // Initialize
+        loadApConfig();
+        loadScheduleData();
+
+        // Functions
+        function showMainMenu() {
+            mainMenu.classList.remove('hidden');
+            apSetup.classList.add('hidden');
+            scheduleSetup.classList.add('hidden');
+        }
+
+        function showApSetup() {
+            mainMenu.classList.add('hidden');
+            apSetup.classList.remove('hidden');
+            scheduleSetup.classList.add('hidden');
+            loadApConfig();
+        }
+
+        function showScheduleSetup() {
+            mainMenu.classList.add('hidden');
+            apSetup.classList.add('hidden');
+            scheduleSetup.classList.remove('hidden');
+            loadScheduleData();
+        }
+
+        function toggleEditMode() {
+            const isEditMode = editToggle.checked;
+            ssidInput.disabled = !isEditMode;
+            passwordInput.disabled = !isEditMode;
+            kitNoInput.disabled = !isEditMode;
+            staticNoInput.disabled = !isEditMode;
+            saveApBtn.classList.toggle('hidden', !isEditMode);
+        }
+
+        function loadApConfig() {
+            // Try to load from localStorage first
+            const savedConfig = localStorage.getItem('config.json');
+            if (savedConfig) {
+                apConfig = JSON.parse(savedConfig);
+            }
+
+            // Update form fields
+            ssidInput.value = apConfig.SSID;
+            passwordInput.value = apConfig.PASSWORD;
+            kitNoInput.value = apConfig.KIT_NO;
+            staticNoInput.value = apConfig.STATIC_NO;
+        }
+
+        function saveApConfig() {
+            // Update config object
+            apConfig.SSID = ssidInput.value;
+            apConfig.PASSWORD = passwordInput.value;
+            apConfig.KIT_NO = kitNoInput.value;
+            apConfig.STATIC_NO = staticNoInput.value;
+
+            // Save to localStorage (simulating config.json)
+            localStorage.setItem('config.json', JSON.stringify(apConfig, null, 2));
+            
+            // Switch back to view mode
+            editToggle.checked = false;
+            toggleEditMode();
+            
+            alert('AP configuration saved successfully!');
+        }
+
+        function loadScheduleData() {
+            // Try to load from localStorage first
+            const savedData = localStorage.getItem('data.json');
+            scheduleData = savedData ? JSON.parse(savedData) : [];
+            
+            // Render schedule items
+            renderScheduleItems();
+        }
+
+        function renderScheduleItems() {
+            scheduleItemsContainer.innerHTML = '';
+            
+            if (scheduleData.length === 0) {
+                scheduleItemsContainer.innerHTML = '<p>No schedule items found. Add one to get started.</p>';
+                return;
+            }
+            
+            // Check if all items are enabled
+            allEnabled = scheduleData.every(item => item.enabled);
+            toggleAllBtn.textContent = allEnabled ? 'Disable All' : 'Enable All';
+            
+            scheduleData.forEach((item, index) => {
+                const scheduleItem = document.createElement('div');
+                scheduleItem.className = 'schedule-item';
+                scheduleItem.innerHTML = `
+                    <div class="form-group">
+                        <label for="time-${index}">Time:</label>
+                        <input type="time" id="time-${index}" value="${item.time}">
+                    </div>
+                    <div class="form-group">
+                        <label for="color-${index}">Color:</label>
+                        <input type="color" id="color-${index}" value="${rgbToHex(item.color)}">
+                    </div>
+                    <div class="schedule-controls">
+                        <div class="toggle-container">
+                            <span>Disabled</span>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="enabled-${index}" ${item.enabled ? 'checked' : ''}>
+                                <span class="slider"></span>
+                            </label>
+                            <span>Enabled</span>
+                        </div>
+                        <button class="delete-btn" data-index="${index}">Delete</button>
+                    </div>
+                `;
+                scheduleItemsContainer.appendChild(scheduleItem);
+                
+                // Add event listener to delete button
+                scheduleItem.querySelector('.delete-btn').addEventListener('click', function() {
+                    deleteScheduleItem(parseInt(this.getAttribute('data-index')));
+                });
+                
+                // Add event listener to enable toggle
+                scheduleItem.querySelector(`#enabled-${index}`).addEventListener('change', function() {
+                    scheduleData[index].enabled = this.checked;
+                    updateToggleAllButton();
+                });
+            });
+        }
+
+        function addNewScheduleItem() {
+            scheduleData.push({
+                time: "00:00",
+                color: [255, 255, 255],
+                enabled: true
+            });
+            renderScheduleItems();
+        }
+
+        function deleteScheduleItem(index) {
+            if (confirm('Are you sure you want to delete this schedule item?')) {
+                scheduleData.splice(index, 1);
+                renderScheduleItems();
+            }
+        }
+
+        function saveScheduleData() {
+            // Update schedule data from form inputs
+            scheduleData.forEach((item, index) => {
+                const timeInput = document.getElementById(`time-${index}`);
+                const colorInput = document.getElementById(`color-${index}`);
+                const enabledInput = document.getElementById(`enabled-${index}`);
+                
+                item.time = timeInput.value;
+                item.color = hexToRgb(colorInput.value);
+                item.enabled = enabledInput.checked;
+            });
+            
+            // Save to localStorage (simulating data.json)
+            localStorage.setItem('data.json', JSON.stringify(scheduleData, null, 2));
+            alert('Schedule saved successfully!');
+        }
+
+        function toggleAllSchedules() {
+            allEnabled = !allEnabled;
+            scheduleData.forEach(item => {
+                item.enabled = allEnabled;
+            });
+            renderScheduleItems();
+        }
+
+        function updateToggleAllButton() {
+            allEnabled = scheduleData.every(item => item.enabled);
+            toggleAllBtn.textContent = allEnabled ? 'Disable All' : 'Enable All';
+        }
+
+        // Helper functions
+        function rgbToHex(rgbArray) {
+            return `#${rgbArray.map(x => {
+                const hex = x.toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            }).join('')}`;
+        }
+
+        function hexToRgb(hex) {
+            const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+            return result ? [
+                parseInt(result[1], 16),
+                parseInt(result[2], 16),
+                parseInt(result[3], 16)
+            ] : [0, 0, 0];
+        }
+    </script>
+</body>
+</html>
